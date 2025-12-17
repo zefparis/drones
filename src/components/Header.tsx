@@ -21,8 +21,17 @@ export default function Header() {
     <header className="border-b bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
         <div className="min-w-0">
-          <div className="truncate text-sm font-semibold tracking-tight">{t('app.title')}</div>
-          <div className="truncate text-xs text-muted-foreground">{t('app.tagline')}</div>
+          <div className="truncate bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-2xl font-bold text-transparent">
+            {t('app.title')}
+          </div>
+          <div className="truncate text-sm text-muted-foreground">{t('app.tagline')}</div>
+          <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+            <span aria-hidden="true">🇫🇷</span>
+            <span>{t('header.patents')}</span>
+            <span className="rounded bg-primary/20 px-2 py-0.5 text-[10px] text-primary">
+              {t('header.patentPending')}
+            </span>
+          </div>
         </div>
 
         <div className="flex items-center gap-2">

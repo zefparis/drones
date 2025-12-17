@@ -6,7 +6,9 @@
   },
   "header": {
     "toggleLanguage": "Toggle language",
-    "toggleTheme": "Toggle theme"
+    "toggleTheme": "Toggle theme",
+    "patents": "French Patents FR2514274, FR2514546",
+    "patentPending": "Patent Pending"
   },
   "theme": {
     "light": "Light",
@@ -26,17 +28,47 @@
     "longitude": "Longitude (deg)",
     "altitude": "Altitude (m)",
     "predictedSun": "Predicted Sun",
+    "observedStars": "Observed Stars",
+    "observedMagnetometer": "Observed Magnetometer",
     "observedSun": "Observed Sun",
     "azimuth": "Azimuth (deg)",
     "elevation": "Elevation (deg)",
+    "heading": "Heading (deg)",
+    "confidence": "Confidence",
     "setObservedToPredicted": "Set observed = predicted",
+    "autoStars": "Auto",
+    "autoMagnetometer": "Auto",
+    "clear": "Clear",
+    "starsEmpty": "No star observations.",
+    "magnetometerEmpty": "No magnetometer observation.",
     "run": "Run validation"
   },
   "scenarios": {
     "nominal": {
-      "title": "Nominal",
-      "description": "Baseline configuration: observed sun matches prediction."
-    }
+      "title": "NOMINAL",
+      "description": "Perfect match · Expected: 100%"
+    },
+    "drift100": {
+      "title": "DRIFT 100M",
+      "description": "+100m North · Expected: 85-95%"
+    },
+    "spoofing": {
+      "title": "GPS SPOOFING",
+      "description": "+2.2km attack · Expected: <60%"
+    },
+    "multiSensorDay": {
+      "title": "MULTI-SENSOR (DAY)",
+      "description": "Sun + magnetometer · Expected: >95%"
+    },
+    "night": {
+      "title": "NIGHT (STARS)",
+      "description": "3 stars + magnetometer · Expected: >90%"
+    },
+    "consensus": {
+      "title": "CONSENSUS",
+      "description": "5 stars + magnetometer · Robust against single-sensor spoofing"
+    },
+    "manualHint": "Or adjust manually below:"
   },
   "visualization": {
     "title": "Visualization",
@@ -45,7 +77,9 @@
     "observedLine": "Observed: az {{az}}°, el {{el}}°",
     "legend": {
       "predicted": "Predicted",
-      "observed": "Observed"
+      "observed": "Observed",
+      "stars": "Stars",
+      "magnetometer": "Magnetometer"
     }
   },
   "metrics": {
@@ -53,6 +87,20 @@
     "subtitle": "Integrity validation output",
     "empty": "Run a validation to see metrics.",
     "integrityScore": "Integrity score",
+    "fusion": {
+      "title": "Multi-Sensor Fusion",
+      "consensusScore": "Consensus score",
+      "sensorCount": "Sensor count",
+      "sun": "Sun",
+      "star": "Star",
+      "magnetometer": "Magnetometer",
+      "delta": "Δ",
+      "weight": "Weight",
+      "confidence": "Confidence"
+    },
+    "historyTitle": "Integrity History",
+    "samples": "samples",
+    "historyEmpty": "Run validation to start recording history",
     "deltaAngle": "Δ angle",
     "deltaAzimuth": "Δ azimuth",
     "deltaElevation": "Δ elevation",
@@ -63,7 +111,9 @@
     "signatures": "Signatures (HMAC-SHA3-512)",
     "signature": {
       "expected": "Expected",
-      "observed": "Observed"
+      "observed": "Observed",
+      "copy": "Copy",
+      "copied": "Copied!"
     }
   }
 }

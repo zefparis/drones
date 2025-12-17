@@ -6,7 +6,15 @@ import SimulationPanel from './components/SimulationPanel'
 import VisualizationPanel from './components/VisualizationPanel'
 import { createDefaultValidator } from './lib/celestialValidator'
 import { predictSunObservation } from './lib/ephemeris'
-import type { CelestialObservation, IntegrityResult, NavigationState } from './types/celestial'
+import { isNightTime } from './lib/stars'
+import type {
+  CelestialObservation,
+  IntegrityResult,
+  MagneticHeadingObservation,
+  MultiSensorObservations,
+  NavigationState,
+  StarObservationInput,
+} from './types/celestial'
 
 const NOMINAL_NAVIGATION: NavigationState = {
   timestampMs: Date.parse('2025-06-21T12:00:00Z'),
@@ -31,11 +39,16 @@ export default function App() {
     predictSunObservation(NOMINAL_NAVIGATION, { refraction: 'normal' }),
   )
 
+  const [observedStars, setObservedStars] = useState<StarObservationInput[]>([])
+  const [observedMagnetometer, setObservedMagnetometer] = useState<MagneticHeadingObservation | null>(null)
+
   const [result, setResult] = useState<IntegrityResult | null>(null)
 
   function applyNominalScenario(): void {
     setNavigation(NOMINAL_NAVIGATION)
     setObservedSun(predictSunObservation(NOMINAL_NAVIGATION, { refraction: 'normal' }))
+    setObservedStars([])
+    setObservedMagnetometer(null)
     setResult(null)
   }
 
@@ -48,6 +61,8 @@ export default function App() {
           <SimulationPanel
             navigation={navigation}
             observedSun={observedSun}
+            observedStars={observedStars}
+            observedMagnetometer={observedMagnetometer}
             predictedSun={predictedSun}
             onChangeNavigation={(next) => {
               setNavigation(next)
@@ -57,14 +72,40 @@ export default function App() {
               setObservedSun(next)
               setResult(null)
             }}
+            onChangeObservedStars={(next) => {
+              setObservedStars(next)
+              setResult(null)
+            }}
+            onChangeObservedMagnetometer={(next) => {
+              setObservedMagnetometer(next)
+              setResult(null)
+            }}
             onApplyNominalScenario={applyNominalScenario}
             onSetObservedToPredicted={() => {
               setObservedSun(predictedSun)
               setResult(null)
             }}
             onRunValidation={() => {
-              const r = validator.validate(navigation, observedSun)
-              setResult(r)
+              const hasExtraSensors = observedStars.length > 0 || observedMagnetometer !== null
+              if (!hasExtraSensors) {
+                const r = validator.validate(navigation, observedSun)
+                setResult(r)
+                return
+              }
+
+              const time = new Date(navigation.timestampMs)
+              const observations: MultiSensorObservations = {
+                sun: isNightTime(navigation.latitudeDeg, navigation.longitudeDeg, navigation.altitudeM, time)
+                  ? undefined
+                  : observedSun,
+                stars: observedStars.length > 0 ? observedStars : undefined,
+                magnetometer: observedMagnetometer ?? undefined,
+              }
+
+              void (async () => {
+                const r = await validator.validateMultiSensor(navigation, observations)
+                setResult(r)
+              })()
             }}
           />
 
@@ -73,6 +114,7 @@ export default function App() {
               navigation={navigation}
               predictedSun={result?.predictedSun ?? predictedSun}
               observedSun={result?.observedSun ?? observedSun}
+              fusion={result?.multiSensor}
             />
 
             <div className="rounded-lg border bg-card p-4 text-xs text-muted-foreground">
