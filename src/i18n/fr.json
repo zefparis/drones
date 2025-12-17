@@ -1,0 +1,91 @@
+{
+  "hero": {
+    "tagline": "NAVIGATION SANS GPS // VALIDATION CRYPTOGRAPHIQUE // CONSENSUS MULTI-CAPTEURS",
+    "scroll": "DÉFILER POUR EXPLORER"
+  },
+  "problem": {
+    "alert": "MENACE DÉTECTÉE",
+    "title": "LE GPS EST COMPROMIS",
+    "subtitle": "Infrastructure mondiale sous attaque // Usurpation // Brouillage // Déni de service",
+    "stat1": "INCIDENTS BROUILLAGE GPS",
+    "stat2": "PERTES MARCHÉ",
+    "stat3": "PANNE GPS MAX",
+    "attack1": {
+      "title": "ATTAQUES SPOOFING GPS",
+      "desc": "Transmission de faux signaux GPS forçant drones et véhicules vers positions erronées. Systèmes défense compromis, infrastructures civiles vulnérables."
+    },
+    "attack2": {
+      "title": "BROUILLAGE SIGNAL",
+      "desc": "Interférence RF bloque réception GPS en zones contestées. Pas de position, pas de navigation, échec mission. Canyons urbains, tunnels, intérieur - GPS défaillant."
+    }
+  },
+  "solution": {
+    "title1": "MULTI-CAPTEURS",
+    "title2": "CONSENSUS",
+    "subtitle": "6 capteurs indépendants valident la position par consensus cryptographique. Sans GPS. Passif. Inbrouillable. Infalsifiable."
+  },
+  "specs": {
+    "title": "SPÉCIFICATIONS TECHNIQUES",
+    "subtitle": "Précision militaire, viabilité commerciale"
+  },
+  "scenarios": {
+    "title": "7 SCÉNARIOS",
+    "subtitle": "VALIDÉS",
+    "nominal": "NOMINAL",
+    "drift100": "DÉRIVE 100M",
+    "drift500": "DÉRIVE 500M",
+    "spoofing": "SPOOFING GPS",
+    "night": "MODE NUIT",
+    "multisensor": "MULTI-CAPTEURS",
+    "consensus": "CONSENSUS",
+    "nominal_title": "Opération Nominale",
+    "nominal_desc": "Tous capteurs opérationnels, GPS disponible. Le système valide la position par consensus multi-capteurs avec vérification d'intégrité cryptographique.",
+    "drift100_title": "Dérive GPS 100m",
+    "drift100_desc": "Dérive GPS simulée de 100 mètres. Le système détecte l'anomalie par désaccord des capteurs et maintient une position précise via navigation céleste.",
+    "drift500_title": "Dérive GPS 500m",
+    "drift500_desc": "Dérive GPS sévère de 500 mètres. Score d'intégrité chute significativement. Le système signale le GPS comme non fiable et bascule sur capteurs de secours.",
+    "spoofing_title": "Attaque Spoofing GPS",
+    "spoofing_desc": "Attaque de spoofing active détectée. Validation cryptographique échoue. Le système rejette les données GPS et opère en mode sans GNSS.",
+    "night_title": "Opérations Nocturnes",
+    "night_desc": "Capteur solaire indisponible. Traqueur stellaire et magnétomètre fournissent navigation primaire. Intégrité maintenue à 98% par redondance.",
+    "multisensor_title": "Fusion Multi-Capteurs",
+    "multisensor_desc": "Les 6 capteurs contribuent à la solution de position. Le filtre de Kalman étendu fusionne les données avec pondération optimale selon confiance capteur.",
+    "consensus_title": "Validation Consensus",
+    "consensus_desc": "Comparaison de hash cryptographique sur toutes les sorties capteurs. Calcul de distance de Hamming assure l'intégrité. Tolérance aux fautes byzantines atteinte."
+  },
+  "market": {
+    "title": "OPPORTUNITÉ MARCHÉ",
+    "subtitle": "€4.2Mds marché adressable d'ici 2030",
+    "tam": "Marché Total Adressable",
+    "sam": "Marché Disponible Serviceable",
+    "som": "Marché Obtenable Serviceable",
+    "segment1": "Défense & Militaire",
+    "segment2": "Aviation Commerciale",
+    "segment3": "Navigation Maritime",
+    "segment4": "Véhicules Autonomes",
+    "segment5": "Infrastructures Critiques"
+  },
+  "ip": {
+    "title": "PROPRIÉTÉ INTELLECTUELLE",
+    "subtitle": "Portefeuille de brevets solide protégeant les innovations clés",
+    "patent1": "FR2514274",
+    "patent1_title": "Algorithme Fusion Multi-Capteurs",
+    "patent1_desc": "Implémentation ESKF innovante pour navigation céleste avec validation cryptographique",
+    "patent2": "FR2514546",
+    "patent2_title": "Protocole d'Intégrité Consensus",
+    "patent2_desc": "Mécanisme d'accord capteurs distribué avec tolérance aux fautes byzantines",
+    "defensibility": "SCORE DÉFENSIBILITÉ",
+    "freedom": "Liberté d'Exploitation",
+    "claims": "Revendications Innovation"
+  },
+  "cta": {
+    "title": "€800K",
+    "subtitle2": "SEED ROUND",
+    "subtitle": "Sécurisez l'avenir de la navigation",
+    "button": "INITIER CONTACT",
+    "fund1": "DEV TRL 5-6",
+    "fund2": "TESTS TERRAIN",
+    "fund3": "PI INTL",
+    "fund4": "CERT + BD"
+  }
+}
