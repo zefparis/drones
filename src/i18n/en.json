@@ -1,91 +1,69 @@
 {
-  "hero": {
-    "tagline": "GNSS-DENIED NAVIGATION // CRYPTOGRAPHIC VALIDATION // MULTI-SENSOR CONSENSUS",
-    "scroll": "SCROLL TO EXPLORE"
+  "app": {
+    "title": "Celestial Navigation Integrity System",
+    "tagline": "GNSS-denied integrity validation demo",
+    "placeholder": "Adjust navigation and sun observations, then run validation to evaluate integrity."
   },
-  "problem": {
-    "alert": "THREAT DETECTED",
-    "title": "GPS IS COMPROMISED",
-    "subtitle": "Global navigation infrastructure under attack // Spoofing // Jamming // Denial of service",
-    "stat1": "GPS JAMMING INCIDENTS",
-    "stat2": "MARKET LOSS",
-    "stat3": "MAX GPS OUTAGE",
-    "attack1": {
-      "title": "GPS SPOOFING ATTACKS",
-      "desc": "Malicious actors transmit fake GPS signals, forcing drones and vehicles to follow false positions. Defense systems compromised, civilian infrastructure vulnerable."
-    },
-    "attack2": {
-      "title": "SIGNAL JAMMING",
-      "desc": "RF interference blocks GPS reception in contested zones. No position data, no navigation, mission failure. Urban canyons, tunnels, indoor operations - GPS unreliable."
-    }
+  "header": {
+    "toggleLanguage": "Toggle language",
+    "toggleTheme": "Toggle theme"
   },
-  "solution": {
-    "title1": "MULTI-SENSOR",
-    "title2": "CONSENSUS",
-    "subtitle": "6 independent sensors validate position through cryptographic consensus. No GPS required. Passive. Unjammable. Unspoofable."
+  "theme": {
+    "light": "Light",
+    "dark": "Dark"
   },
-  "specs": {
-    "title": "TECHNICAL SPECIFICATIONS",
-    "subtitle": "Military-grade precision meets commercial viability"
+  "status": {
+    "nominal": "Nominal",
+    "degraded": "Degraded",
+    "anomalous": "Anomalous"
+  },
+  "simulation": {
+    "title": "Simulation",
+    "subtitle": "Navigation state + sun observation inputs",
+    "scenarios": "Scenarios",
+    "timestamp": "Timestamp",
+    "latitude": "Latitude (deg)",
+    "longitude": "Longitude (deg)",
+    "altitude": "Altitude (m)",
+    "predictedSun": "Predicted Sun",
+    "observedSun": "Observed Sun",
+    "azimuth": "Azimuth (deg)",
+    "elevation": "Elevation (deg)",
+    "setObservedToPredicted": "Set observed = predicted",
+    "run": "Run validation"
   },
   "scenarios": {
-    "title": "7 SCENARIOS",
-    "subtitle": "VALIDATED",
-    "nominal": "NOMINAL",
-    "drift100": "DRIFT 100M",
-    "drift500": "DRIFT 500M",
-    "spoofing": "GPS SPOOFING",
-    "night": "NIGHT MODE",
-    "multisensor": "MULTI-SENSOR",
-    "consensus": "CONSENSUS",
-    "nominal_title": "Nominal Operation",
-    "nominal_desc": "All sensors operational, GPS available. System validates position through multi-sensor consensus with cryptographic integrity verification.",
-    "drift100_title": "GPS Drift 100m",
-    "drift100_desc": "Simulated GPS drift of 100 meters. System detects anomaly through sensor disagreement and maintains accurate position via celestial navigation.",
-    "drift500_title": "GPS Drift 500m",
-    "drift500_desc": "Severe GPS drift of 500 meters. Integrity score drops significantly. System flags GPS as unreliable and switches to backup sensors.",
-    "spoofing_title": "GPS Spoofing Attack",
-    "spoofing_desc": "Active spoofing attack detected. Cryptographic validation fails. System rejects GPS data entirely and operates in GNSS-denied mode.",
-    "night_title": "Night Operations",
-    "night_desc": "Sun sensor unavailable. Star tracker and magnetometer provide primary navigation. System maintains 98% integrity through sensor redundancy.",
-    "multisensor_title": "Multi-Sensor Fusion",
-    "multisensor_desc": "All 6 sensors contribute to position solution. Extended Kalman Filter fuses data with optimal weighting based on sensor confidence.",
-    "consensus_title": "Consensus Validation",
-    "consensus_desc": "Cryptographic hash comparison across all sensor outputs. Hamming distance calculation ensures data integrity. Byzantine fault tolerance achieved."
+    "nominal": {
+      "title": "Nominal",
+      "description": "Baseline configuration: observed sun matches prediction."
+    }
   },
-  "market": {
-    "title": "MARKET OPPORTUNITY",
-    "subtitle": "€4.2B addressable market by 2030",
-    "tam": "Total Addressable Market",
-    "sam": "Serviceable Available Market",
-    "som": "Serviceable Obtainable Market",
-    "segment1": "Defense & Military",
-    "segment2": "Commercial Aviation",
-    "segment3": "Maritime Navigation",
-    "segment4": "Autonomous Vehicles",
-    "segment5": "Critical Infrastructure"
+  "visualization": {
+    "title": "Visualization",
+    "timestamp": "Timestamp (UTC)",
+    "predictedLine": "Predicted: az {{az}}°, el {{el}}°",
+    "observedLine": "Observed: az {{az}}°, el {{el}}°",
+    "legend": {
+      "predicted": "Predicted",
+      "observed": "Observed"
+    }
   },
-  "ip": {
-    "title": "INTELLECTUAL PROPERTY",
-    "subtitle": "Strong patent portfolio protecting core innovations",
-    "patent1": "FR2514274",
-    "patent1_title": "Multi-Sensor Fusion Algorithm",
-    "patent1_desc": "Novel ESKF implementation for celestial navigation with cryptographic validation",
-    "patent2": "FR2514546",
-    "patent2_title": "Consensus Integrity Protocol",
-    "patent2_desc": "Distributed sensor agreement mechanism with Byzantine fault tolerance",
-    "defensibility": "DEFENSIBILITY SCORE",
-    "freedom": "Freedom to Operate",
-    "claims": "Innovation Claims"
-  },
-  "cta": {
-    "title": "€800K",
-    "subtitle2": "SEED ROUND",
-    "subtitle": "Secure humanity's navigation future",
-    "button": "INITIATE CONTACT",
-    "fund1": "TRL 5-6 DEV",
-    "fund2": "FIELD TESTS",
-    "fund3": "IP INTL",
-    "fund4": "CERT + BD"
+  "metrics": {
+    "title": "Metrics",
+    "subtitle": "Integrity validation output",
+    "empty": "Run a validation to see metrics.",
+    "integrityScore": "Integrity score",
+    "deltaAngle": "Δ angle",
+    "deltaAzimuth": "Δ azimuth",
+    "deltaElevation": "Δ elevation",
+    "hammingDistance": "Hamming distance",
+    "prediction": "Prediction",
+    "crypto": "Crypto",
+    "total": "Total",
+    "signatures": "Signatures (HMAC-SHA3-512)",
+    "signature": {
+      "expected": "Expected",
+      "observed": "Observed"
+    }
   }
 }

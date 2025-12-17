@@ -1,91 +1,69 @@
 {
-  "hero": {
-    "tagline": "NAVIGATION SANS GPS // VALIDATION CRYPTOGRAPHIQUE // CONSENSUS MULTI-CAPTEURS",
-    "scroll": "DÉFILER POUR EXPLORER"
+  "app": {
+    "title": "Système d’intégrité de navigation céleste",
+    "tagline": "Démo de validation d’intégrité en environnement GNSS-dégradé",
+    "placeholder": "Ajustez l’état de navigation et l’observation solaire, puis lancez la validation pour évaluer l’intégrité."
   },
-  "problem": {
-    "alert": "MENACE DÉTECTÉE",
-    "title": "LE GPS EST COMPROMIS",
-    "subtitle": "Infrastructure mondiale sous attaque // Usurpation // Brouillage // Déni de service",
-    "stat1": "INCIDENTS BROUILLAGE GPS",
-    "stat2": "PERTES MARCHÉ",
-    "stat3": "PANNE GPS MAX",
-    "attack1": {
-      "title": "ATTAQUES SPOOFING GPS",
-      "desc": "Transmission de faux signaux GPS forçant drones et véhicules vers positions erronées. Systèmes défense compromis, infrastructures civiles vulnérables."
-    },
-    "attack2": {
-      "title": "BROUILLAGE SIGNAL",
-      "desc": "Interférence RF bloque réception GPS en zones contestées. Pas de position, pas de navigation, échec mission. Canyons urbains, tunnels, intérieur - GPS défaillant."
-    }
+  "header": {
+    "toggleLanguage": "Changer de langue",
+    "toggleTheme": "Changer de thème"
   },
-  "solution": {
-    "title1": "MULTI-CAPTEURS",
-    "title2": "CONSENSUS",
-    "subtitle": "6 capteurs indépendants valident la position par consensus cryptographique. Sans GPS. Passif. Inbrouillable. Infalsifiable."
+  "theme": {
+    "light": "Clair",
+    "dark": "Sombre"
   },
-  "specs": {
-    "title": "SPÉCIFICATIONS TECHNIQUES",
-    "subtitle": "Précision militaire, viabilité commerciale"
+  "status": {
+    "nominal": "Nominal",
+    "degraded": "Dégradé",
+    "anomalous": "Anormal"
+  },
+  "simulation": {
+    "title": "Simulation",
+    "subtitle": "État de navigation + entrées d’observation solaire",
+    "scenarios": "Scénarios",
+    "timestamp": "Horodatage",
+    "latitude": "Latitude (deg)",
+    "longitude": "Longitude (deg)",
+    "altitude": "Altitude (m)",
+    "predictedSun": "Soleil prédit",
+    "observedSun": "Soleil observé",
+    "azimuth": "Azimut (deg)",
+    "elevation": "Élévation (deg)",
+    "setObservedToPredicted": "Aligner observation = prédiction",
+    "run": "Lancer la validation"
   },
   "scenarios": {
-    "title": "7 SCÉNARIOS",
-    "subtitle": "VALIDÉS",
-    "nominal": "NOMINAL",
-    "drift100": "DÉRIVE 100M",
-    "drift500": "DÉRIVE 500M",
-    "spoofing": "SPOOFING GPS",
-    "night": "MODE NUIT",
-    "multisensor": "MULTI-CAPTEURS",
-    "consensus": "CONSENSUS",
-    "nominal_title": "Opération Nominale",
-    "nominal_desc": "Tous capteurs opérationnels, GPS disponible. Le système valide la position par consensus multi-capteurs avec vérification d'intégrité cryptographique.",
-    "drift100_title": "Dérive GPS 100m",
-    "drift100_desc": "Dérive GPS simulée de 100 mètres. Le système détecte l'anomalie par désaccord des capteurs et maintient une position précise via navigation céleste.",
-    "drift500_title": "Dérive GPS 500m",
-    "drift500_desc": "Dérive GPS sévère de 500 mètres. Score d'intégrité chute significativement. Le système signale le GPS comme non fiable et bascule sur capteurs de secours.",
-    "spoofing_title": "Attaque Spoofing GPS",
-    "spoofing_desc": "Attaque de spoofing active détectée. Validation cryptographique échoue. Le système rejette les données GPS et opère en mode sans GNSS.",
-    "night_title": "Opérations Nocturnes",
-    "night_desc": "Capteur solaire indisponible. Traqueur stellaire et magnétomètre fournissent navigation primaire. Intégrité maintenue à 98% par redondance.",
-    "multisensor_title": "Fusion Multi-Capteurs",
-    "multisensor_desc": "Les 6 capteurs contribuent à la solution de position. Le filtre de Kalman étendu fusionne les données avec pondération optimale selon confiance capteur.",
-    "consensus_title": "Validation Consensus",
-    "consensus_desc": "Comparaison de hash cryptographique sur toutes les sorties capteurs. Calcul de distance de Hamming assure l'intégrité. Tolérance aux fautes byzantines atteinte."
+    "nominal": {
+      "title": "Nominal",
+      "description": "Configuration de référence : le soleil observé correspond à la prédiction."
+    }
   },
-  "market": {
-    "title": "OPPORTUNITÉ MARCHÉ",
-    "subtitle": "€4.2Mds marché adressable d'ici 2030",
-    "tam": "Marché Total Adressable",
-    "sam": "Marché Disponible Serviceable",
-    "som": "Marché Obtenable Serviceable",
-    "segment1": "Défense & Militaire",
-    "segment2": "Aviation Commerciale",
-    "segment3": "Navigation Maritime",
-    "segment4": "Véhicules Autonomes",
-    "segment5": "Infrastructures Critiques"
+  "visualization": {
+    "title": "Visualisation",
+    "timestamp": "Horodatage (UTC)",
+    "predictedLine": "Prédit : az {{az}}°, el {{el}}°",
+    "observedLine": "Observé : az {{az}}°, el {{el}}°",
+    "legend": {
+      "predicted": "Prédit",
+      "observed": "Observé"
+    }
   },
-  "ip": {
-    "title": "PROPRIÉTÉ INTELLECTUELLE",
-    "subtitle": "Portefeuille de brevets solide protégeant les innovations clés",
-    "patent1": "FR2514274",
-    "patent1_title": "Algorithme Fusion Multi-Capteurs",
-    "patent1_desc": "Implémentation ESKF innovante pour navigation céleste avec validation cryptographique",
-    "patent2": "FR2514546",
-    "patent2_title": "Protocole d'Intégrité Consensus",
-    "patent2_desc": "Mécanisme d'accord capteurs distribué avec tolérance aux fautes byzantines",
-    "defensibility": "SCORE DÉFENSIBILITÉ",
-    "freedom": "Liberté d'Exploitation",
-    "claims": "Revendications Innovation"
-  },
-  "cta": {
-    "title": "€800K",
-    "subtitle2": "SEED ROUND",
-    "subtitle": "Sécurisez l'avenir de la navigation",
-    "button": "INITIER CONTACT",
-    "fund1": "DEV TRL 5-6",
-    "fund2": "TESTS TERRAIN",
-    "fund3": "PI INTL",
-    "fund4": "CERT + BD"
+  "metrics": {
+    "title": "Indicateurs",
+    "subtitle": "Sortie de validation d’intégrité",
+    "empty": "Lancez une validation pour afficher les indicateurs.",
+    "integrityScore": "Score d’intégrité",
+    "deltaAngle": "Δ angle",
+    "deltaAzimuth": "Δ azimut",
+    "deltaElevation": "Δ élévation",
+    "hammingDistance": "Distance de Hamming",
+    "prediction": "Prédiction",
+    "crypto": "Crypto",
+    "total": "Total",
+    "signatures": "Signatures (HMAC-SHA3-512)",
+    "signature": {
+      "expected": "Attendue",
+      "observed": "Observée"
+    }
   }
 }

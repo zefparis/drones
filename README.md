@@ -1,6 +1,13 @@
-# HCS-SHIELD
+# Celestial Integrity Demo
 
-Application web interactive de démonstration du système Celestial Integrity.
+Application de démonstration du système de validation d'intégrité GNSS par observation céleste.
+
+## Fonctionnalités
+
+- **Simulation de navigation** - Position GPS, altitude, timestamp
+- **Observation solaire** - Azimut et élévation mesurés vs prédits
+- **Validation cryptographique** - Score d'intégrité en temps réel
+- **Visualisation** - Représentation graphique des écarts
 
 ## Installation
 
@@ -24,10 +31,9 @@ npm run build
 
 ## Stack
 
-- React 19 + TypeScript
-- Vite 7
-- Tailwind CSS v4
-- Framer Motion
+- React 18 + TypeScript
+- Vite
+- Tailwind CSS
 - i18next (FR/EN)
 
 ## Licence
