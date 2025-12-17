@@ -4,7 +4,7 @@
 
 [![TRL 5](https://img.shields.io/badge/TRL-5%20Validated-brightgreen)](https://celestial.ia-solution.fr)
 [![License](https://img.shields.io/badge/License-Proprietary-blue)](LICENSE)
-[![Patents](https://img.shields.io/badge/Patents-2%20Granted-orange)](https://www.inpi.fr)
+[![Patents](https://img.shields.io/badge/Patents-FR2514274%20%7C%20FR2514546%20%7C%20FR2515560-blue)](https://www.inpi.fr)
 
 **[Live Demo](https://celestial.ia-solution.fr)** • **[Documentation](PITCH.md)** • **[Contact](#-contact)**
 
@@ -24,7 +24,7 @@ IA-SOLUTION has developed the **first navigation system capable of detecting GPS
 | **Position Accuracy** | ±1.5m | ✅ ±5m target (3× better) |
 | **Spoofing Detection** | 100% (>1km) | ✅ Real-time validation |
 
-**Patents**: FR2514274 | FR2514546 (granted 2025, INPI) + 3 pending Q1 2025
+**Patents**: FR2514274 | FR2514546 (granted 2025) | FR2515560 (filed 2025-12-17) - INPI
 
 ---
 
@@ -132,13 +132,9 @@ This repository contains an **interactive investor pitch deck** with 8 animated 
 
 | Patent | Title | Grant | Status |
 |--------|-------|-------|--------|
-| **FR2514274** | Multi-Sensor Fusion Algorithm | 2025 | ✅ GRANTED |
-| **FR2514546** | Consensus Integrity Protocol | 2025 | ✅ GRANTED |
-
-### Pending Filings (Q1 2025)
-- Multi-sensor cryptographic consensus
-- Passive 24/7 navigation (solar/stellar)
-- Multi-channel attack detection
+| **FR2514274** | Celestial integrity validation method | 2025 | ✅ GRANTED |
+| **FR2514546** | Multi-sensor cryptographic consensus | 2025 | ✅ GRANTED |
+| **FR2515560** | GPS spoofing detection via multi-sensor fusion | 2025-12-17 | 📝 FILED |
 
 ### International Strategy
 - **PCT Filing**: Q2 2025
@@ -275,7 +271,7 @@ All rights reserved.
 ---
 
 <p align="center">
-  <strong>Patents</strong>: FR2514274 | FR2514546 (granted 2025, INPI)<br>
+  <strong>Patents</strong>: FR2514274 | FR2514546 | FR2515560 (INPI)<br>
   <strong>Demo</strong>: <a href="https://celestial.ia-solution.fr">celestial.ia-solution.fr</a><br>
   <strong>Contact</strong>: contact@ia-solution.com
 </p>
