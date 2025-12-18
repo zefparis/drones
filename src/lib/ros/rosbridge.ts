@@ -128,7 +128,7 @@ export class RosBridge {
       this.onConnect?.()
     })
 
-    this.ros.on('error', (error) => {
+    this.ros.on('error', (error: unknown) => {
       console.error('❌ ROS connection error:', error)
       this.connected = false
       this.connecting = false
