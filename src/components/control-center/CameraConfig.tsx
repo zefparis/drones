@@ -9,7 +9,7 @@ import { ConfigSection, ConfigSwitch, ConfigSlider, ConfigSelect } from './Confi
 
 export function CameraConfig() {
   const [config, setConfig] = useState({
-    // Main Camera (14 functions)
+    // Main Camera (16 functions)
     main_camera_enabled: true,
     resolution: '4K',
     frame_rate: 30,
@@ -18,25 +18,33 @@ export function CameraConfig() {
     white_balance: 'AUTO',
     iso_auto: true,
     iso_value: 400,
+    shutter_speed: 'AUTO',
+    aperture: 2.8,
     
-    // Gimbal Control (12 functions)
+    // Gimbal Control (14 functions)
     gimbal_enabled: true,
     gimbal_mode: 'FOLLOW',
     pitch_limit_up: 30,
     pitch_limit_down: -90,
     yaw_limit: 180,
     stabilization: true,
+    gimbal_speed: 50,
+    smooth_follow: true,
     
-    // Image Processing (10 functions)
+    // Image Processing (12 functions)
     hdr_enabled: true,
     noise_reduction: true,
     sharpening: 0.5,
     distortion_correction: true,
+    color_profile: 'STANDARD',
+    histogram_enabled: true,
     
-    // Recording (6 functions)
+    // Recording (8 functions)
     codec: 'H265',
     bitrate: 100,
     storage_format: 'MP4',
+    audio_recording: false,
+    gps_tagging: true,
   });
 
   const updateConfig = (key: string, value: unknown) => {

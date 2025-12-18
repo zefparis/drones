@@ -9,30 +9,38 @@ import { ConfigSwitch, ConfigSlider, ConfigSelect, ConfigAlert } from './ConfigH
 
 export function ThermalConfig() {
   const [config, setConfig] = useState({
-    // Temperature Limits (10 functions)
+    // Temperature Limits (12 functions)
     motor_max_temp: 85,
     esc_max_temp: 80,
     battery_max_temp: 45,
     cpu_max_temp: 75,
     camera_max_temp: 50,
+    gpu_max_temp: 80,
+    lidar_max_temp: 60,
     
-    // Cooling Control (10 functions)
+    // Cooling Control (12 functions)
     active_cooling: true,
     fan_mode: 'AUTO',
     fan_min_speed: 20,
     fan_max_speed: 100,
     cooling_threshold: 60,
+    fan_curve_enabled: true,
+    heat_pipe_active: true,
     
-    // Cold Weather (8 functions)
+    // Cold Weather (10 functions)
     cold_weather_mode: false,
     preheat_enabled: true,
     min_operating_temp: -10,
     battery_heater_target: 15,
+    motor_warmup: true,
+    lens_defogging: true,
     
-    // Thermal Protection (4 functions)
+    // Thermal Protection (6 functions)
     thermal_throttling: true,
     emergency_shutdown: true,
     shutdown_temp: 90,
+    thermal_imaging: false,
+    heat_map_logging: true,
   });
 
   const updateConfig = (key: string, value: unknown) => {

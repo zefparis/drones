@@ -9,7 +9,7 @@ import { ConfigSwitch, ConfigSlider, ConfigSelect, ConfigAlert } from './ConfigH
 
 export function SwarmConfig() {
   const [config, setConfig] = useState({
-    // Swarm Network (16 functions)
+    // Swarm Network (18 functions)
     swarm_enabled: false,
     swarm_role: 'MEMBER',
     swarm_id: 'ALPHA',
@@ -17,29 +17,38 @@ export function SwarmConfig() {
     mesh_topology: 'MESH',
     heartbeat_interval: 500,
     timeout_threshold: 3000,
+    auto_join: true,
+    discovery_enabled: true,
     
-    // Formation (14 functions)
+    // Formation (16 functions)
     formation_enabled: true,
     formation_type: 'LINE',
     spacing: 10,
     formation_altitude: 50,
     auto_reform: true,
     collision_avoidance: true,
+    altitude_separation: 5,
+    dynamic_formation: true,
     
-    // Coordination (14 functions)
+    // Coordination (16 functions)
     leader_election: true,
     consensus_protocol: 'RAFT',
     task_allocation: 'AUCTION',
     load_balancing: true,
     failover_enabled: true,
+    priority_level: 5,
+    cooperative_sensing: true,
+    shared_mapping: true,
     
-    // Communication (12 functions)
+    // Communication (14 functions)
     broadcast_enabled: true,
     unicast_enabled: true,
     relay_messages: true,
     encryption_enabled: true,
     max_hops: 3,
     bandwidth_limit: 1000,
+    qos_enabled: true,
+    priority_messages: true,
   });
 
   const updateConfig = (key: string, value: unknown) => {

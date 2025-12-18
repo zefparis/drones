@@ -9,34 +9,42 @@ import { ConfigSection, ConfigSwitch, ConfigSlider, ConfigSelect, ConfigAlert } 
 
 export function PayloadConfig() {
   const [config, setConfig] = useState({
-    // Payload Detection (12 functions)
+    // Payload Detection (14 functions)
     auto_detect: true,
     payload_type: 'CAMERA',
     payload_weight: 500,
     weight_limit: 2000,
     cog_compensation: true,
+    payload_id: 'PRIMARY',
+    firmware_check: true,
     
-    // Payload Control (12 functions)
+    // Payload Control (14 functions)
     payload_power: true,
     power_voltage: 12,
     power_current_limit: 5,
     serial_enabled: true,
     serial_baudrate: 115200,
     mavlink_passthrough: true,
+    i2c_enabled: true,
+    spi_enabled: false,
     
-    // Release Mechanism (10 functions)
+    // Release Mechanism (12 functions)
     release_enabled: false,
     release_type: 'SERVO',
     release_altitude_min: 5,
     release_speed_max: 5,
     arm_timeout: 30,
+    confirmation_required: true,
+    safety_check: true,
     
-    // Custom Payload (10 functions)
+    // Custom Payload (12 functions)
     custom_protocol: false,
     protocol_type: 'UART',
     trigger_gpio: 1,
     feedback_gpio: 2,
     trigger_duration: 100,
+    heartbeat_enabled: true,
+    error_handling: 'RETRY',
   });
 
   const updateConfig = (key: string, value: unknown) => {

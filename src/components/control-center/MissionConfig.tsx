@@ -9,7 +9,7 @@ import { ConfigSection, ConfigSwitch, ConfigSlider, ConfigSelect, ConfigAlert } 
 
 export function MissionConfig() {
   const [config, setConfig] = useState({
-    // Mission Planning (16 functions)
+    // Mission Planning (18 functions)
     auto_planning: true,
     planning_mode: 'OPTIMAL',
     waypoint_spacing: 50,
@@ -17,26 +17,35 @@ export function MissionConfig() {
     default_altitude: 50,
     terrain_following: true,
     terrain_clearance: 30,
+    max_mission_distance: 5000,
+    circular_mission: false,
     
-    // Execution Control (14 functions)
+    // Execution Control (16 functions)
     auto_start: false,
     pause_on_threat: true,
     resume_after_clear: true,
     waypoint_timeout: 300,
     mission_timeout: 3600,
     abort_on_low_battery: true,
+    speed_profile: 'NORMAL',
+    hover_at_waypoints: false,
+    waypoint_actions_enabled: true,
     
-    // Contingency (10 functions)
+    // Contingency (12 functions)
     lost_link_action: 'RTH',
     low_battery_action: 'RTH',
     geofence_breach_action: 'HOVER',
     emergency_landing_enabled: true,
+    rally_point_enabled: true,
+    lost_link_timeout: 30,
     
-    // Data Collection (8 functions)
+    // Data Collection (10 functions)
     auto_capture: true,
     capture_interval: 5,
     capture_at_waypoints: true,
     store_telemetry: true,
+    video_recording: true,
+    metadata_logging: true,
   });
 
   const updateConfig = (key: string, value: unknown) => {

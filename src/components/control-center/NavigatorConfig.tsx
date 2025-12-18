@@ -9,22 +9,31 @@ import { ConfigSection, ConfigSwitch, ConfigSlider, ConfigSelect } from './Confi
 
 export function NavigatorConfig() {
   const [config, setConfig] = useState({
-    // Localisation (24 functions)
+    // Localisation (28 functions)
     gps_enabled: false,
     gps_burst_duration: 10,
     gps_spoofing_detection: true,
     gps_jamming_threshold: -80,
+    gps_min_satellites: 6,
+    gps_hdop_threshold: 2.0,
+    gps_position_timeout: 30,
     vio_tracking_enabled: true,
     vio_drift_threshold: 2.0,
     vio_feature_count: 200,
     vio_keyframe_distance: 0.5,
+    vio_exposure_control: true,
+    vio_imu_preintegration: true,
     lidar_slam_enabled: true,
     lidar_range: 100,
     lidar_resolution: 0.1,
+    lidar_scan_rate: 20,
+    lidar_ground_filter: true,
     celestial_backup_enabled: true,
     celestial_min_stars: 3,
+    celestial_sun_tracking: true,
+    celestial_refraction_correction: true,
     
-    // EKF Fusion (12 functions)
+    // EKF Fusion (16 functions)
     ekf_state_dim: 15,
     ekf_imu_weight: 1.0,
     ekf_vio_weight: 0.8,
@@ -33,8 +42,12 @@ export function NavigatorConfig() {
     ekf_celestial_weight: 0.4,
     ekf_update_rate: 100,
     ekf_covariance_reset: false,
+    ekf_outlier_rejection: true,
+    ekf_mahalanobis_threshold: 5.991,
+    ekf_bias_estimation: true,
+    ekf_delay_compensation: true,
     
-    // Path Planning (18 functions)
+    // Path Planning (20 functions)
     planning_algorithm: 'A*',
     obstacle_clearance: 2.0,
     max_velocity: 15.0,
@@ -43,6 +56,10 @@ export function NavigatorConfig() {
     waypoint_radius: 1.0,
     replan_threshold: 5.0,
     dynamic_obstacles: true,
+    terrain_aware_planning: true,
+    no_fly_zone_enabled: true,
+    wind_compensation: true,
+    energy_optimal_path: false,
     
     // Trajectory Control (14 functions)
     pid_p_gain: 1.2,
@@ -52,6 +69,9 @@ export function NavigatorConfig() {
     velocity_smoothing: 0.8,
     yaw_rate_limit: 45,
     altitude_hold_precision: 0.5,
+    position_hold_precision: 0.3,
+    attitude_rate_limit: 90,
+    feedforward_enabled: true,
   });
 
   const updateConfig = (key: string, value: unknown) => {

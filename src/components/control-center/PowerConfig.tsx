@@ -9,7 +9,7 @@ import { ConfigSection, ConfigSwitch, ConfigSlider, ConfigAlert } from './Config
 
 export function PowerConfig() {
   const [config, setConfig] = useState({
-    // Battery Management (14 functions)
+    // Battery Management (16 functions)
     smart_battery: true,
     cell_count: 6,
     voltage_nominal: 22.2,
@@ -18,25 +18,33 @@ export function PowerConfig() {
     critical_voltage: 3.3,
     low_percent_warning: 25,
     critical_percent: 15,
+    charge_rate: 2,
+    discharge_rate_max: 50,
     
-    // Power Distribution (12 functions)
+    // Power Distribution (14 functions)
     motor_power_limit: 100,
     aux_power_enabled: true,
     payload_power: true,
     heater_enabled: false,
     led_brightness: 50,
+    usb_power: true,
+    servo_power: true,
     
-    // Energy Optimization (8 functions)
+    // Energy Optimization (10 functions)
     eco_mode: false,
     dynamic_power: true,
     regenerative_braking: true,
     idle_power_reduction: true,
+    sleep_mode_enabled: true,
+    power_priority: 'FLIGHT',
     
-    // Monitoring (4 functions)
+    // Monitoring (6 functions)
     cell_monitoring: true,
     temperature_monitoring: true,
     current_monitoring: true,
     logging_interval: 1,
+    voltage_graph: true,
+    power_alerts: true,
   });
 
   const updateConfig = (key: string, value: unknown) => {

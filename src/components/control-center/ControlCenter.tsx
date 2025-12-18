@@ -47,18 +47,18 @@ export function ControlCenter({ onClose }: ControlCenterProps) {
   const [activeModule, setActiveModule] = useState('navigator');
 
   const modules = [
-    { id: 'navigator', icon: <Navigation className="w-5 h-5" />, label: 'Navigator', count: '68 functions' },
+    { id: 'navigator', icon: <Navigation className="w-5 h-5" />, label: 'Navigator', count: '78 functions' },
     { id: 'sentinel', icon: <Shield className="w-5 h-5" />, label: 'Sentinel', count: '86 functions' },
     { id: 'brain', icon: <Brain className="w-5 h-5" />, label: 'Brain', count: '78 functions' },
     { id: 'communication', icon: <Radio className="w-5 h-5" />, label: 'Communication', count: '54 functions' },
     { id: 'diagnostics', icon: <AlertTriangle className="w-5 h-5" />, label: 'Diagnostics', count: '52 functions' },
-    { id: 'perception', icon: <Eye className="w-5 h-5" />, label: 'Perception', count: '64 functions' },
-    { id: 'mission', icon: <Zap className="w-5 h-5" />, label: 'Mission', count: '48 functions' },
-    { id: 'camera', icon: <Camera className="w-5 h-5" />, label: 'Camera', count: '42 functions' },
-    { id: 'power', icon: <Battery className="w-5 h-5" />, label: 'Power', count: '38 functions' },
-    { id: 'thermal', icon: <Thermometer className="w-5 h-5" />, label: 'Thermal', count: '32 functions' },
-    { id: 'swarm', icon: <Users className="w-5 h-5" />, label: 'Swarm', count: '56 functions' },
-    { id: 'payload', icon: <Cpu className="w-5 h-5" />, label: 'Payload', count: '44 functions' },
+    { id: 'perception', icon: <Eye className="w-5 h-5" />, label: 'Perception', count: '74 functions' },
+    { id: 'mission', icon: <Zap className="w-5 h-5" />, label: 'Mission', count: '56 functions' },
+    { id: 'camera', icon: <Camera className="w-5 h-5" />, label: 'Camera', count: '50 functions' },
+    { id: 'power', icon: <Battery className="w-5 h-5" />, label: 'Power', count: '46 functions' },
+    { id: 'thermal', icon: <Thermometer className="w-5 h-5" />, label: 'Thermal', count: '40 functions' },
+    { id: 'swarm', icon: <Users className="w-5 h-5" />, label: 'Swarm', count: '64 functions' },
+    { id: 'payload', icon: <Cpu className="w-5 h-5" />, label: 'Payload', count: '52 functions' },
   ];
 
   const totalFunctions = modules.reduce((acc, m) => acc + parseInt(m.count), 0);

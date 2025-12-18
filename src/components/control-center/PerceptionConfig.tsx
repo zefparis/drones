@@ -9,7 +9,7 @@ import { ConfigSection, ConfigSwitch, ConfigSlider, ConfigSelect, ConfigAlert } 
 
 export function PerceptionConfig() {
   const [config, setConfig] = useState({
-    // Computer Vision (20 functions)
+    // Computer Vision (24 functions)
     cv_enabled: true,
     object_detection: true,
     object_detection_model: 'YOLOv8',
@@ -18,8 +18,12 @@ export function PerceptionConfig() {
     max_tracked_objects: 50,
     segmentation_enabled: true,
     depth_estimation: true,
+    face_detection: false,
+    vehicle_classification: true,
+    weapon_detection: true,
+    pose_estimation: true,
     
-    // LiDAR Processing (16 functions)
+    // LiDAR Processing (20 functions)
     lidar_enabled: true,
     point_cloud_filter: true,
     ground_removal: true,
@@ -27,13 +31,20 @@ export function PerceptionConfig() {
     cluster_min_points: 10,
     cluster_max_distance: 0.5,
     voxel_size: 0.1,
+    range_image_enabled: true,
+    intensity_filtering: true,
+    multi_return_processing: true,
+    motion_compensation: true,
     
-    // Sensor Fusion (14 functions)
+    // Sensor Fusion (16 functions)
     fusion_enabled: true,
     fusion_method: 'KALMAN',
     camera_lidar_sync: true,
     temporal_alignment: 50,
     spatial_calibration: true,
+    radar_fusion: true,
+    thermal_fusion: true,
+    ultrasonic_fusion: true,
     
     // Scene Understanding (14 functions)
     scene_classification: true,
@@ -42,6 +53,8 @@ export function PerceptionConfig() {
     semantic_mapping: true,
     dynamic_object_prediction: true,
     prediction_horizon: 2.0,
+    lane_detection: true,
+    road_segmentation: true,
   });
 
   const updateConfig = (key: string, value: unknown) => {
