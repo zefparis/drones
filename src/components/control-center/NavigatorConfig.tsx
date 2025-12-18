@@ -180,7 +180,7 @@ export function NavigatorConfig() {
                   max={2}
                   step={0.1}
                   unit="m"
-                  onChange={(val) => updateConfig('vio_keyframe_distance', val)}
+                  onChange={(val: number) => updateConfig('vio_keyframe_distance', val)}
                 />
               </ConfigSection>
 
