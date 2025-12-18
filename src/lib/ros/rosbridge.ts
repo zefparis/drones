@@ -2,30 +2,28 @@
  * CORTEX-U7 RosBridge Client
  * 
  * Connects React dashboard to ROS2 via rosbridge WebSocket.
- * Subscribes to drone navigation, threats, and state topics.
+ * Uses native WebSocket API for browser compatibility (no roslib dependency).
+ * Compatible with rosbridge_server JSON protocol.
  */
-
-// Note: Install with: npm install roslib @types/roslib
-import ROSLIB from 'roslib'
 
 // ============================================================================
 // TYPES
 // ============================================================================
 
 export interface DronePosition {
-  x: number        // Local NED North (meters)
-  y: number        // Local NED East (meters)
-  z: number        // Local NED Down (meters, negative = altitude)
-  lat?: number     // Global latitude (if available)
-  lon?: number     // Global longitude (if available)
-  alt?: number     // Global altitude (meters)
-  heading: number  // Yaw in degrees
+  x: number
+  y: number
+  z: number
+  lat?: number
+  lon?: number
+  alt?: number
+  heading: number
   roll: number
   pitch: number
 }
 
 export interface DroneVelocity {
-  vx: number  // m/s
+  vx: number
   vy: number
   vz: number
 }
@@ -93,20 +91,33 @@ export interface RosBridgeConfig {
   reconnectInterval?: number
 }
 
+// Internal types for rosbridge protocol
+interface RosBridgeMessage {
+  op: string
+  topic?: string
+  type?: string
+  msg?: unknown
+  id?: string
+  service?: string
+  args?: unknown
+}
+
+type MessageHandler = (msg: unknown) => void
+
 // ============================================================================
-// ROSBRIDGE CLIENT
+// ROSBRIDGE CLIENT (Native WebSocket)
 // ============================================================================
 
 export class RosBridge {
-  private ros: ROSLIB.Ros
+  private ws: WebSocket | null = null
   private config: Required<RosBridgeConfig>
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null
-  private subscribers: Map<string, ROSLIB.Topic> = new Map()
+  private subscribers: Map<string, Set<MessageHandler>> = new Map()
+  private messageId = 0
   
-  public connected: boolean = false
-  public connecting: boolean = false
+  public connected = false
+  public connecting = false
 
-  // Event callbacks
   public onConnect?: () => void
   public onDisconnect?: () => void
   public onError?: (error: Error) => void
@@ -118,48 +129,55 @@ export class RosBridge {
       reconnectInterval: config.reconnectInterval ?? 5000,
     }
 
-    this.ros = new ROSLIB.Ros({})
-
-    // Connection handlers
-    this.ros.on('connection', () => {
-      console.log('✅ Connected to CORTEX-U7 via ROS2')
-      this.connected = true
-      this.connecting = false
-      this.onConnect?.()
-    })
-
-    this.ros.on('error', (error: unknown) => {
-      console.error('❌ ROS connection error:', error)
-      this.connected = false
-      this.connecting = false
-      this.onError?.(new Error(String(error)))
-    })
-
-    this.ros.on('close', () => {
-      console.warn('⚠️ ROS connection closed')
-      this.connected = false
-      this.connecting = false
-      this.onDisconnect?.()
-      this.scheduleReconnect()
-    })
-
     if (this.config.autoConnect) {
       this.connect()
     }
   }
 
-  // ========================================================================
-  // CONNECTION MANAGEMENT
-  // ========================================================================
-
   connect(): void {
     if (this.connected || this.connecting) return
+    if (typeof window === 'undefined') return // SSR guard
 
     this.connecting = true
     console.log(`🔄 Connecting to ROS2 at ${this.config.url}...`)
-    
+
     try {
-      this.ros.connect(this.config.url)
+      this.ws = new WebSocket(this.config.url)
+
+      this.ws.onopen = () => {
+        console.log('✅ Connected to CORTEX-U7 via ROS2')
+        this.connected = true
+        this.connecting = false
+        this.resubscribeAll()
+        this.onConnect?.()
+      }
+
+      this.ws.onclose = () => {
+        console.warn('⚠️ ROS connection closed')
+        this.connected = false
+        this.connecting = false
+        this.onDisconnect?.()
+        this.scheduleReconnect()
+      }
+
+      this.ws.onerror = (event) => {
+        console.error('❌ ROS connection error:', event)
+        this.connected = false
+        this.connecting = false
+        this.onError?.(new Error('WebSocket error'))
+      }
+
+      this.ws.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data) as RosBridgeMessage
+          if (data.op === 'publish' && data.topic) {
+            const handlers = this.subscribers.get(data.topic)
+            handlers?.forEach((handler) => handler(data.msg))
+          }
+        } catch (e) {
+          console.error('Failed to parse ROS message:', e)
+        }
+      }
     } catch (error) {
       console.error('Failed to connect:', error)
       this.connecting = false
@@ -172,279 +190,165 @@ export class RosBridge {
       clearTimeout(this.reconnectTimer)
       this.reconnectTimer = null
     }
-    
-    this.subscribers.forEach((topic) => topic.unsubscribe())
-    this.subscribers.clear()
-    
-    this.ros.close()
+    this.ws?.close()
+    this.ws = null
     this.connected = false
   }
 
   private scheduleReconnect(): void {
     if (this.reconnectTimer) return
-
     this.reconnectTimer = setTimeout(() => {
       this.reconnectTimer = null
-      if (!this.connected) {
-        this.connect()
-      }
+      if (!this.connected) this.connect()
     }, this.config.reconnectInterval)
+  }
+
+  private send(msg: RosBridgeMessage): void {
+    if (this.ws?.readyState === WebSocket.OPEN) {
+      this.ws.send(JSON.stringify(msg))
+    }
+  }
+
+  private subscribe(topic: string, type: string, handler: MessageHandler): () => void {
+    if (!this.subscribers.has(topic)) {
+      this.subscribers.set(topic, new Set())
+      if (this.connected) {
+        this.send({ op: 'subscribe', topic, type, id: `sub_${++this.messageId}` })
+      }
+    }
+    this.subscribers.get(topic)!.add(handler)
+
+    return () => {
+      const handlers = this.subscribers.get(topic)
+      handlers?.delete(handler)
+      if (handlers?.size === 0) {
+        this.subscribers.delete(topic)
+        this.send({ op: 'unsubscribe', topic, id: `unsub_${++this.messageId}` })
+      }
+    }
+  }
+
+  private resubscribeAll(): void {
+    this.subscribers.forEach((_, topic) => {
+      this.send({ op: 'subscribe', topic, id: `sub_${++this.messageId}` })
+    })
   }
 
   // ========================================================================
   // SUBSCRIPTIONS
   // ========================================================================
 
-  /**
-   * Subscribe to drone pose (position + orientation)
-   */
   subscribeToPosition(callback: (pos: DronePosition) => void): () => void {
-    const topic = this.getOrCreateTopic(
-      '/cortex/navigation/pose',
-      'geometry_msgs/PoseStamped'
-    )
-
-    const handler = (message: any) => {
-      const { roll, pitch, yaw } = this.quaternionToEuler(message.pose.orientation)
+    return this.subscribe('/cortex/navigation/pose', 'geometry_msgs/PoseStamped', (msg: any) => {
+      const q = msg?.pose?.orientation ?? { x: 0, y: 0, z: 0, w: 1 }
+      const { roll, pitch, yaw } = this.quaternionToEuler(q)
       callback({
-        x: message.pose.position.x,
-        y: message.pose.position.y,
-        z: message.pose.position.z,
+        x: msg?.pose?.position?.x ?? 0,
+        y: msg?.pose?.position?.y ?? 0,
+        z: msg?.pose?.position?.z ?? 0,
         heading: yaw * 180 / Math.PI,
         roll: roll * 180 / Math.PI,
         pitch: pitch * 180 / Math.PI,
       })
-    }
-
-    topic.subscribe(handler)
-    return () => topic.unsubscribe(handler)
+    })
   }
 
-  /**
-   * Subscribe to drone velocity
-   */
   subscribeToVelocity(callback: (vel: DroneVelocity) => void): () => void {
-    const topic = this.getOrCreateTopic(
-      '/cortex/navigation/velocity',
-      'geometry_msgs/TwistStamped'
-    )
-
-    const handler = (message: any) => {
+    return this.subscribe('/cortex/navigation/velocity', 'geometry_msgs/TwistStamped', (msg: any) => {
       callback({
-        vx: message.twist.linear.x,
-        vy: message.twist.linear.y,
-        vz: message.twist.linear.z,
+        vx: msg?.twist?.linear?.x ?? 0,
+        vy: msg?.twist?.linear?.y ?? 0,
+        vz: msg?.twist?.linear?.z ?? 0,
       })
-    }
-
-    topic.subscribe(handler)
-    return () => topic.unsubscribe(handler)
+    })
   }
 
-  /**
-   * Subscribe to threat level
-   */
   subscribeToThreats(callback: (threat: ThreatData) => void): () => void {
-    const topic = this.getOrCreateTopic(
-      '/cortex/security/threat_level',
-      'std_msgs/Float32'  // Fallback to Float32 if custom msg not available
-    )
+    return this.subscribe('/cortex/security/threat_level', 'std_msgs/Float32', (msg: any) => {
+      const score = typeof msg?.data === 'number' ? msg.data : (msg?.threat_score ?? 0)
+      let level: ThreatLevelType = 'CLEAR'
+      if (score >= 80) level = 'CRITICAL'
+      else if (score >= 50) level = 'HIGH'
+      else if (score >= 20) level = 'ELEVATED'
 
-    const handler = (message: any) => {
-      // Handle both custom ThreatLevel msg and simple Float32
-      if (typeof message.data === 'number') {
-        // Simple Float32 format
-        const score = message.data
-        let level: ThreatLevelType = 'CLEAR'
-        if (score >= 80) level = 'CRITICAL'
-        else if (score >= 50) level = 'HIGH'
-        else if (score >= 20) level = 'ELEVATED'
-
-        callback({
-          level,
-          levelCode: ['CLEAR', 'ELEVATED', 'HIGH', 'CRITICAL'].indexOf(level),
-          threats: [],
-          threatScore: score,
-          gpsSafe: score < 20,
-        })
-      } else {
-        // Full ThreatLevel message
-        const levels: ThreatLevelType[] = ['CLEAR', 'ELEVATED', 'HIGH', 'CRITICAL']
-        callback({
-          level: levels[message.level] ?? 'CLEAR',
-          levelCode: message.level,
-          threats: message.threats ?? [],
-          threatScore: message.threat_score ?? 0,
-          gpsSafe: message.gps_safe ?? true,
-        })
-      }
-    }
-
-    topic.subscribe(handler)
-    return () => topic.unsubscribe(handler)
+      callback({
+        level,
+        levelCode: ['CLEAR', 'ELEVATED', 'HIGH', 'CRITICAL'].indexOf(level),
+        threats: msg?.threats ?? [],
+        threatScore: score,
+        gpsSafe: msg?.gps_safe ?? score < 20,
+      })
+    })
   }
 
-  /**
-   * Subscribe to drone FSM state
-   */
   subscribeToState(callback: (state: DroneStateData) => void): () => void {
-    const topic = this.getOrCreateTopic(
-      '/cortex/brain/state',
-      'std_msgs/String'  // Fallback to String if custom msg not available
-    )
+    const states: DroneStateType[] = [
+      'IDLE', 'PREFLIGHT', 'TAKEOFF', 'NAVIGATE', 'HOVER',
+      'AVOID_OBSTACLE', 'AVOID_HUMAN', 'RELOCALIZE',
+      'RTH', 'LAND', 'EMERGENCY_LAND', 'FAULT'
+    ]
 
-    const handler = (message: any) => {
-      const states: DroneStateType[] = [
-        'IDLE', 'PREFLIGHT', 'TAKEOFF', 'NAVIGATE', 'HOVER',
-        'AVOID_OBSTACLE', 'AVOID_HUMAN', 'RELOCALIZE',
-        'RTH', 'LAND', 'EMERGENCY_LAND', 'FAULT'
-      ]
-
-      if (typeof message.data === 'string') {
-        // Simple String format
-        const state = message.data as DroneStateType
-        callback({
-          state,
-          stateCode: states.indexOf(state),
-          previousState: 'IDLE',
-          stateDuration: 0,
-        })
-      } else {
-        // Full DroneState message
-        callback({
-          state: states[message.state] ?? 'IDLE',
-          stateCode: message.state,
-          previousState: states[message.previous_state] ?? 'IDLE',
-          stateDuration: message.state_duration ?? 0,
-        })
-      }
-    }
-
-    topic.subscribe(handler)
-    return () => topic.unsubscribe(handler)
+    return this.subscribe('/cortex/brain/state', 'std_msgs/String', (msg: any) => {
+      const stateName = typeof msg?.data === 'string' ? msg.data : (states[msg?.state] ?? 'IDLE')
+      callback({
+        state: stateName as DroneStateType,
+        stateCode: states.indexOf(stateName as DroneStateType),
+        previousState: 'IDLE',
+        stateDuration: msg?.state_duration ?? 0,
+      })
+    })
   }
 
-  /**
-   * Subscribe to navigation status
-   */
   subscribeToNavigationStatus(callback: (status: NavigationStatusData) => void): () => void {
-    const topic = this.getOrCreateTopic(
-      '/cortex/navigation/status',
-      'std_msgs/String'
-    )
+    const statuses: NavigationStatusType[] = [
+      'INITIALIZING', 'NOMINAL', 'DEGRADED', 'CELESTIAL_BACKUP', 'LOST'
+    ]
 
-    const handler = (message: any) => {
-      const statuses: NavigationStatusType[] = [
-        'INITIALIZING', 'NOMINAL', 'DEGRADED', 'CELESTIAL_BACKUP', 'LOST'
-      ]
-
-      if (typeof message.data === 'string') {
-        const status = message.data as NavigationStatusType
-        callback({
-          status,
-          statusCode: statuses.indexOf(status),
-          uncertaintyM: 0,
-          vioActive: status === 'NOMINAL',
-          lidarActive: status === 'NOMINAL',
-          gpsActive: false,
-          celestialActive: status === 'CELESTIAL_BACKUP',
-          vioConfidence: status === 'NOMINAL' ? 0.9 : 0,
-          lidarConfidence: status === 'NOMINAL' ? 0.9 : 0,
-          gpsConfidence: 0,
-          celestialConfidence: status === 'CELESTIAL_BACKUP' ? 0.8 : 0,
-        })
-      } else {
-        callback({
-          status: statuses[message.status] ?? 'INITIALIZING',
-          statusCode: message.status,
-          uncertaintyM: message.uncertainty_m ?? 0,
-          vioActive: message.vio_active ?? false,
-          lidarActive: message.lidar_active ?? false,
-          gpsActive: message.gps_active ?? false,
-          celestialActive: message.celestial_active ?? false,
-          vioConfidence: message.vio_confidence ?? 0,
-          lidarConfidence: message.lidar_confidence ?? 0,
-          gpsConfidence: message.gps_confidence ?? 0,
-          celestialConfidence: message.celestial_confidence ?? 0,
-        })
-      }
-    }
-
-    topic.subscribe(handler)
-    return () => topic.unsubscribe(handler)
+    return this.subscribe('/cortex/navigation/status', 'std_msgs/String', (msg: any) => {
+      const statusName = typeof msg?.data === 'string' ? msg.data : (statuses[msg?.status] ?? 'INITIALIZING')
+      callback({
+        status: statusName as NavigationStatusType,
+        statusCode: statuses.indexOf(statusName as NavigationStatusType),
+        uncertaintyM: msg?.uncertainty_m ?? 0,
+        vioActive: msg?.vio_active ?? statusName === 'NOMINAL',
+        lidarActive: msg?.lidar_active ?? statusName === 'NOMINAL',
+        gpsActive: msg?.gps_active ?? false,
+        celestialActive: msg?.celestial_active ?? statusName === 'CELESTIAL_BACKUP',
+        vioConfidence: msg?.vio_confidence ?? (statusName === 'NOMINAL' ? 0.9 : 0),
+        lidarConfidence: msg?.lidar_confidence ?? (statusName === 'NOMINAL' ? 0.9 : 0),
+        gpsConfidence: msg?.gps_confidence ?? 0,
+        celestialConfidence: msg?.celestial_confidence ?? (statusName === 'CELESTIAL_BACKUP' ? 0.8 : 0),
+      })
+    })
   }
 
-  /**
-   * Subscribe to celestial integrity data
-   */
   subscribeToCelestial(callback: (data: CelestialData) => void): () => void {
-    const topic = this.getOrCreateTopic(
-      '/cortex/navigation/integrity',
-      'std_msgs/Float32'
-    )
-
-    const handler = (message: any) => {
-      if (typeof message.data === 'number') {
-        // Simple Float32 (integrity score only)
-        const score = message.data
-        callback({
-          sunAzimuthDeg: 0,
-          sunElevationDeg: 0,
-          celestialHeadingDeg: 0,
-          integrityScorePct: score,
-          integrityStatus: score >= 95 ? 'nominal' : score >= 80 ? 'degraded' : 'anomalous',
-          confidence: score / 100,
-          hmacSignature: '',
-          starsCount: 0,
-          nightMode: false,
-        })
-      } else {
-        // Full CelestialData message
-        callback({
-          sunAzimuthDeg: message.sun_azimuth_deg ?? 0,
-          sunElevationDeg: message.sun_elevation_deg ?? 0,
-          celestialHeadingDeg: message.celestial_heading_deg ?? 0,
-          integrityScorePct: message.integrity_score_pct ?? 0,
-          integrityStatus: message.integrity_status ?? 'anomalous',
-          confidence: message.confidence ?? 0,
-          hmacSignature: message.hmac_signature ?? '',
-          starsCount: message.stars_count ?? 0,
-          nightMode: message.night_mode ?? false,
-        })
-      }
-    }
-
-    topic.subscribe(handler)
-    return () => topic.unsubscribe(handler)
+    return this.subscribe('/cortex/navigation/integrity', 'std_msgs/Float32', (msg: any) => {
+      const score = typeof msg?.data === 'number' ? msg.data : (msg?.integrity_score_pct ?? 100)
+      callback({
+        sunAzimuthDeg: msg?.sun_azimuth_deg ?? 0,
+        sunElevationDeg: msg?.sun_elevation_deg ?? 0,
+        celestialHeadingDeg: msg?.celestial_heading_deg ?? 0,
+        integrityScorePct: score,
+        integrityStatus: score >= 95 ? 'nominal' : score >= 80 ? 'degraded' : 'anomalous',
+        confidence: msg?.confidence ?? score / 100,
+        hmacSignature: msg?.hmac_signature ?? '',
+        starsCount: msg?.stars_count ?? 0,
+        nightMode: msg?.night_mode ?? false,
+      })
+    })
   }
 
   // ========================================================================
   // PUBLISHING
   // ========================================================================
 
-  /**
-   * Publish mission waypoints
-   */
-  publishMission(waypoints: Waypoint[], missionName: string = 'Manual Mission'): void {
-    const topic = this.getOrCreateTopic(
-      '/cortex/mission/loaded',
-      'std_msgs/String'
-    )
-
-    const missionData = {
-      name: missionName,
-      waypoints: waypoints.map(wp => ({
-        x: wp.x,
-        y: wp.y,
-        z: wp.z,
-      })),
-    }
-
-    const message = new ROSLIB.Message({
-      data: JSON.stringify(missionData)
+  publishMission(waypoints: Waypoint[], missionName = 'Manual Mission'): void {
+    this.send({
+      op: 'publish',
+      topic: '/cortex/mission/loaded',
+      msg: { data: JSON.stringify({ name: missionName, waypoints }) },
     })
-
-    topic.publish(message)
     console.log(`📤 Published mission: ${missionName} (${waypoints.length} waypoints)`)
   }
 
@@ -452,33 +356,33 @@ export class RosBridge {
   // SERVICES
   // ========================================================================
 
-  /**
-   * Call GPS enable/disable service
-   */
-  async setGPSEnabled(enable: boolean, reason: string = ''): Promise<{ success: boolean; message: string }> {
+  async setGPSEnabled(enable: boolean, reason = ''): Promise<{ success: boolean; message: string }> {
     return new Promise((resolve) => {
-      const service = new ROSLIB.Service({
-        ros: this.ros,
-        name: '/cortex/security/set_gps_enabled',
-        serviceType: 'cortex_msgs/SetGPSEnabled',
+      const id = `call_${++this.messageId}`
+      
+      const handler = (event: MessageEvent) => {
+        try {
+          const data = JSON.parse(event.data)
+          if (data.op === 'service_response' && data.id === id) {
+            this.ws?.removeEventListener('message', handler)
+            resolve({ success: data.result?.success ?? false, message: data.result?.message ?? '' })
+          }
+        } catch { /* ignore */ }
+      }
+
+      this.ws?.addEventListener('message', handler)
+      this.send({
+        op: 'call_service',
+        service: '/cortex/security/set_gps_enabled',
+        args: { enable, reason },
+        id,
       })
 
-      const request = new ROSLIB.ServiceRequest({
-        enable,
-        reason,
-      })
-
-      service.callService(request, (response: any) => {
-        resolve({
-          success: response.success,
-          message: response.message,
-        })
-      }, (error: string) => {
-        resolve({
-          success: false,
-          message: `Service call failed: ${error}`,
-        })
-      })
+      // Timeout after 5s
+      setTimeout(() => {
+        this.ws?.removeEventListener('message', handler)
+        resolve({ success: false, message: 'Service call timeout' })
+      }, 5000)
     })
   }
 
@@ -486,32 +390,14 @@ export class RosBridge {
   // HELPERS
   // ========================================================================
 
-  private getOrCreateTopic(name: string, messageType: string): ROSLIB.Topic {
-    let topic = this.subscribers.get(name)
-    if (!topic) {
-      topic = new ROSLIB.Topic({
-        ros: this.ros,
-        name,
-        messageType,
-      })
-      this.subscribers.set(name, topic)
-    }
-    return topic
-  }
-
   private quaternionToEuler(q: { x: number; y: number; z: number; w: number }) {
-    // Roll (x-axis rotation)
     const sinr_cosp = 2 * (q.w * q.x + q.y * q.z)
     const cosr_cosp = 1 - 2 * (q.x * q.x + q.y * q.y)
     const roll = Math.atan2(sinr_cosp, cosr_cosp)
 
-    // Pitch (y-axis rotation)
     const sinp = 2 * (q.w * q.y - q.z * q.x)
-    const pitch = Math.abs(sinp) >= 1 
-      ? Math.sign(sinp) * Math.PI / 2 
-      : Math.asin(sinp)
+    const pitch = Math.abs(sinp) >= 1 ? Math.sign(sinp) * Math.PI / 2 : Math.asin(sinp)
 
-    // Yaw (z-axis rotation)
     const siny_cosp = 2 * (q.w * q.z + q.x * q.y)
     const cosy_cosp = 1 - 2 * (q.y * q.y + q.z * q.z)
     const yaw = Math.atan2(siny_cosp, cosy_cosp)
