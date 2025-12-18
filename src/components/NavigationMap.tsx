@@ -153,10 +153,10 @@ function drawGrid(ctx: CanvasRenderingContext2D, width: number, height: number) 
 
 function drawCoordinates(
   ctx: CanvasRenderingContext2D,
-  width: number,
+  _width: number,
   height: number,
   centerLat: number,
-  centerLon: number,
+  _centerLon: number,
   zoom: number
 ) {
   ctx.fillStyle = '#475569'
@@ -279,7 +279,7 @@ function drawDrone(
 function drawCompass(
   ctx: CanvasRenderingContext2D,
   width: number,
-  height: number,
+  _height: number,
   heading: number
 ) {
   const compassX = width - 50

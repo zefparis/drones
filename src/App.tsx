@@ -23,15 +23,12 @@ import {
   Radio,
   Radar,
   Shield,
-  Wifi,
   WifiOff,
 } from 'lucide-react'
 
-import Header from './components/Header'
 import VisualizationPanel from './components/VisualizationPanel'
 import { NavigationMap } from './components/NavigationMap'
 import { useRosBridge } from './lib/ros'
-import { createDefaultValidator } from './lib/celestialValidator'
 import { predictSunObservation } from './lib/ephemeris'
 import { cn } from './lib/utils'
 import type { NavigationState } from './types/celestial'
@@ -96,7 +93,6 @@ export default function App() {
   const [mission] = useState<{ name: string; waypoints: Array<{ lat: number; lon: number; alt: number }> } | null>(null)
 
   // For celestial visualization (existing component)
-  const validator = useMemo(() => createDefaultValidator(), [])
   const navState: NavigationState = {
     timestampMs: Date.now(),
     latitudeDeg: position?.lat ?? DEFAULT_POSITION.lat,
