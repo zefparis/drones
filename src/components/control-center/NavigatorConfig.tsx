@@ -6,6 +6,7 @@
 import { useState } from 'react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '../ui/accordion';
 import { ConfigSection, ConfigSwitch, ConfigSlider, ConfigSelect } from './ConfigHelpers';
+import { GpsBurstPanel } from './GpsBurstPanel';
 
 export function NavigatorConfig() {
   const [config, setConfig] = useState({
@@ -493,6 +494,18 @@ export function NavigatorConfig() {
                 unit="m"
                 onChange={(val) => updateConfig('altitude_hold_precision', val)}
               />
+            </AccordionContent>
+          </AccordionItem>
+
+          {/* Section 5: GPS Burst Manager */}
+          <AccordionItem value="gpsburst" className="border border-cyan-500/50 rounded-lg px-4 bg-cyan-500/5">
+            <AccordionTrigger className="text-cyan-400 hover:text-cyan-300">
+              <span className="flex items-center gap-2">
+                📡 GPS Burst Manager (Stealth Mode)
+              </span>
+            </AccordionTrigger>
+            <AccordionContent className="pt-4">
+              <GpsBurstPanel />
             </AccordionContent>
           </AccordionItem>
         </Accordion>
