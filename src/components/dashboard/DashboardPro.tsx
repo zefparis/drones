@@ -1,6 +1,7 @@
 /**
  * CORTEX-U7 Dashboard Pro - Military Cockpit Interface
  * Investor Demo - Spectacular 3D Real-time Dashboard
+ * Optimized for 1920x1080 - All panels visible without scroll
  */
 
 import { useEffect, useState, useRef, Suspense } from 'react';
@@ -11,13 +12,10 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
 import { DroneModel3D } from './DroneModel3D';
-import { TelemetryHUD } from './TelemetryHUD';
-import { SensorPanel } from './SensorPanel';
 import { ThreatRadar } from './ThreatRadar';
-import { FSMVisualizer } from './FSMVisualizer';
 import { FPVStream } from './FPVStream';
 import { useRosBridge } from '../../lib/ros';
-import { Home } from 'lucide-react';
+import { Home, Activity, Cpu, Star } from 'lucide-react';
 
 // Fix Leaflet marker icons
 delete (L.Icon.Default.prototype as unknown as { _getIconUrl?: unknown })._getIconUrl;
@@ -34,14 +32,18 @@ interface DashboardProProps {
 export function DashboardPro({ onClose }: DashboardProProps) {
   const { connected, position, state, threat } = useRosBridge();
   
-  // Simulated/derived data for demo (would come from ROS in production)
+  // Simulated/derived data for demo
   const orientation = { roll: 2.5, pitch: -1.2, yaw: 45 };
   const battery = { percentage: 85, voltage: 12.4, current: 8.2 };
+  const velocity = { speed: 5.2 };
   const sensors = {
     gps_enabled: true,
     lidar_active: true,
     camera_active: true,
-    motors: [true, true, true, true],
+    vio_tracking: true,
+    satellites: 12,
+    signal: 92,
+    temperature: 42,
   };
   
   const [missionActive, setMissionActive] = useState(false);
@@ -62,22 +64,30 @@ export function DashboardPro({ onClose }: DashboardProProps) {
     }
   }, [threat?.level]);
 
-  // Simulated trajectory for demo
+  // Simulated trajectory
   const trajectory = [
     { lat: position?.lat || 48.8566, lon: position?.lon || 2.3522 },
     { lat: (position?.lat || 48.8566) + 0.001, lon: (position?.lon || 2.3522) + 0.001 },
     { lat: (position?.lat || 48.8566) + 0.002, lon: (position?.lon || 2.3522) - 0.001 },
   ];
 
+  const formatFlightTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const currentState = typeof state === 'string' ? state : state?.state || 'HOVER';
+
   return (
-    <div className="h-screen bg-slate-950 overflow-hidden relative">
+    <div className="h-screen bg-slate-950 flex flex-col overflow-hidden">
       {/* CRT Scanline Effect */}
-      <div className="absolute inset-0 pointer-events-none z-50 opacity-5">
-        <div className="h-full w-full bg-[repeating-linear-gradient(0deg,transparent,transparent_2px,rgba(6,182,212,0.03)_2px,rgba(6,182,212,0.03)_4px)]" />
+      <div className="absolute inset-0 pointer-events-none z-50 opacity-10">
+        <div className="h-full w-full bg-[repeating-linear-gradient(0deg,transparent,transparent_2px,#0ff1_2px,#0ff1_4px)]" />
       </div>
 
-      {/* Header */}
-      <header className="h-14 border-b border-cyan-500/30 bg-slate-950/95 backdrop-blur relative z-10">
+      {/* Header - 56px fixed */}
+      <header className="h-14 flex-shrink-0 border-b border-cyan-500/30 bg-slate-950/90 backdrop-blur relative z-10">
         <div className="h-full px-4 flex items-center justify-between">
           {/* Logo & Title */}
           <div className="flex items-center gap-4">
@@ -105,9 +115,9 @@ export function DashboardPro({ onClose }: DashboardProProps) {
           </div>
 
           {/* Status Indicators */}
-          <div className="flex items-center gap-4">
-            <StatusIndicator label="GPS" value={sensors?.gps_enabled ? 'ON' : 'OFF'} status={sensors?.gps_enabled ? 'active' : 'inactive'} />
-            <StatusIndicator label="PWR" value={`${battery?.percentage || 0}%`} status={battery?.percentage && battery.percentage > 20 ? 'active' : 'warning'} />
+          <div className="flex items-center gap-3">
+            <StatusIndicator label="GPS" value={sensors.gps_enabled ? 'ON' : 'OFF'} status={sensors.gps_enabled ? 'active' : 'inactive'} />
+            <StatusIndicator label="PWR" value={`${battery.percentage}%`} status={battery.percentage > 20 ? 'active' : 'warning'} />
             <StatusIndicator label="THR" value={threat?.level || 'CLEAR'} status={threat?.level === 'HIGH' ? 'critical' : 'active'} />
             <StatusIndicator label="LINK" value={connected ? 'CONN' : 'DISC'} status={connected ? 'active' : 'inactive'} />
             
@@ -115,7 +125,7 @@ export function DashboardPro({ onClose }: DashboardProProps) {
             
             <button
               onClick={() => setMissionActive(!missionActive)}
-              className={`px-5 py-2 rounded font-bold text-sm tracking-wider transition-all ${
+              className={`px-4 py-1.5 rounded font-bold text-sm tracking-wider transition-all ${
                 missionActive
                   ? 'bg-red-600 text-white animate-pulse shadow-lg shadow-red-600/50'
                   : 'bg-gradient-to-r from-green-500 to-emerald-600 text-white hover:from-green-400 hover:to-emerald-500 shadow-lg shadow-green-500/30'
@@ -127,158 +137,184 @@ export function DashboardPro({ onClose }: DashboardProProps) {
         </div>
       </header>
 
-      {/* Main Dashboard Grid */}
-      <div className="h-[calc(100vh-56px)] grid grid-cols-12 grid-rows-6 gap-1 p-1">
+      {/* Main Content - calculated height */}
+      <div className="flex-1 flex flex-col gap-1.5 p-1.5 overflow-hidden min-h-0">
         
-        {/* 3D Map View - 8 cols x 4 rows */}
-        <div className="col-span-8 row-span-4 bg-slate-900 rounded-lg overflow-hidden border border-cyan-500/20 relative">
-          <MapView position={position?.lat && position?.lon ? { lat: position.lat, lon: position.lon, alt: position.alt } : undefined} trajectory={trajectory} />
+        {/* Top Row: Map + 3D Model + Stats - 50% */}
+        <div className="flex-[5] grid grid-cols-12 gap-1.5 min-h-0">
           
-          {/* Map HUD Overlay */}
-          <div className="absolute top-3 left-3 space-y-2 z-[1000]">
-            <div className="bg-slate-950/90 backdrop-blur-sm px-3 py-1.5 rounded border border-cyan-500/30">
-              <span className="text-cyan-400 text-xs font-mono">LAT</span>
-              <span className="text-white text-sm font-mono ml-2">{(position?.lat || 48.8566).toFixed(6)}°</span>
+          {/* 3D Map - 6 columns */}
+          <div className="col-span-6 bg-slate-900 rounded-lg overflow-hidden border border-cyan-500/30 relative">
+            <MapView 
+              position={position?.lat && position?.lon ? { lat: position.lat, lon: position.lon } : undefined}
+              trajectory={trajectory}
+            />
+            
+            {/* Mini HUD overlay */}
+            <div className="absolute top-3 left-3 space-y-1.5 z-[1000]">
+              <div className="bg-slate-950/90 backdrop-blur px-2.5 py-1 rounded text-xs font-mono border border-cyan-500/30">
+                <span className="text-cyan-400">LAT</span> <span className="text-white">{(position?.lat || 48.8566).toFixed(6)}</span>
+              </div>
+              <div className="bg-slate-950/90 backdrop-blur px-2.5 py-1 rounded text-xs font-mono border border-cyan-500/30">
+                <span className="text-cyan-400">LON</span> <span className="text-white">{(position?.lon || 2.3522).toFixed(6)}</span>
+              </div>
+              <div className="bg-slate-950/90 backdrop-blur px-2.5 py-1 rounded text-xs font-mono border border-cyan-500/30">
+                <span className="text-cyan-400">ALT</span> <span className="text-white">{(position?.alt || 35).toFixed(1)} m</span>
+              </div>
             </div>
-            <div className="bg-slate-950/90 backdrop-blur-sm px-3 py-1.5 rounded border border-cyan-500/30">
-              <span className="text-cyan-400 text-xs font-mono">LON</span>
-              <span className="text-white text-sm font-mono ml-2">{(position?.lon || 2.3522).toFixed(6)}°</span>
+
+            {missionActive && (
+              <div className="absolute top-3 right-3 z-[1000] bg-green-500/20 border border-green-500/50 rounded px-2.5 py-1 flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                <span className="text-green-400 text-xs font-mono">MISSION ACTIVE</span>
+              </div>
+            )}
+          </div>
+
+          {/* 3D Drone Model - 4 columns */}
+          <div className="col-span-4 bg-slate-900 rounded-lg overflow-hidden border border-cyan-500/30 relative">
+            <div className="absolute top-2 left-2 bg-cyan-500/20 backdrop-blur px-2 py-0.5 rounded text-xs font-bold text-cyan-400 z-10">
+              3D MODEL
             </div>
-            <div className="bg-slate-950/90 backdrop-blur-sm px-3 py-1.5 rounded border border-cyan-500/30">
-              <span className="text-cyan-400 text-xs font-mono">ALT</span>
-              <span className="text-white text-sm font-mono ml-2">{(position?.alt || 0).toFixed(1)} m</span>
+            
+            <Canvas className="bg-gradient-to-b from-slate-900 to-slate-950">
+              <Suspense fallback={null}>
+                <PerspectiveCamera makeDefault position={[2.5, 1.5, 2.5]} />
+                <OrbitControls enableZoom={true} enablePan={false} autoRotate autoRotateSpeed={0.5} />
+                <ambientLight intensity={0.5} />
+                <directionalLight position={[10, 10, 5]} intensity={1} />
+                <Environment preset="night" />
+                
+                <DroneModel3D 
+                  rotation={orientation}
+                  sensors={{
+                    motors: [true, true, true, true],
+                    lidar_active: sensors.lidar_active,
+                    gps_enabled: sensors.gps_enabled,
+                    camera_active: sensors.camera_active,
+                  }}
+                  threats={[]}
+                />
+                
+                <gridHelper args={[10, 20, '#1e3a5f', '#0f172a']} position={[0, -1, 0]} />
+              </Suspense>
+            </Canvas>
+
+            {/* Orientation Overlay */}
+            <div className="absolute bottom-2 left-2 right-2 bg-slate-950/90 backdrop-blur rounded p-1.5 border border-cyan-500/30">
+              <div className="grid grid-cols-3 gap-1 text-xs">
+                <div className="text-center">
+                  <span className="text-cyan-400 text-[10px]">ROLL</span>
+                  <div className="text-white font-mono">{orientation.roll.toFixed(1)}°</div>
+                </div>
+                <div className="text-center">
+                  <span className="text-cyan-400 text-[10px]">PITCH</span>
+                  <div className="text-white font-mono">{orientation.pitch.toFixed(1)}°</div>
+                </div>
+                <div className="text-center">
+                  <span className="text-cyan-400 text-[10px]">YAW</span>
+                  <div className="text-white font-mono">{orientation.yaw.toFixed(1)}°</div>
+                </div>
+              </div>
             </div>
           </div>
 
-          {/* Mission Status */}
-          {missionActive && (
-            <div className="absolute top-3 right-3 z-[1000] bg-green-500/20 border border-green-500/50 rounded px-3 py-1.5 flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-              <span className="text-green-400 text-xs font-mono tracking-wider">MISSION ACTIVE</span>
-            </div>
-          )}
+          {/* Quick Stats - 2 columns */}
+          <div className="col-span-2 grid grid-rows-6 gap-1">
+            <QuickStat label="↑ ALT" value={`${(position?.alt || 35).toFixed(1)}`} unit="m" />
+            <QuickStat label="→ SPD" value={`${velocity.speed.toFixed(1)}`} unit="m/s" />
+            <QuickStat label="⟳ HDG" value={`${orientation.yaw.toFixed(0)}`} unit="°" />
+            <QuickStat label="⚡ BATT" value={`${battery.percentage}`} unit="%" color={battery.percentage > 20 ? 'cyan' : 'red'} />
+            <QuickStat label="📡 GPS" value={`${sensors.satellites}`} unit="sats" />
+            <QuickStat label="📶 LINK" value={`${sensors.signal}`} unit="%" />
+          </div>
         </div>
 
-        {/* 3D Drone Model - 4 cols x 4 rows */}
-        <div className="col-span-4 row-span-4 bg-slate-900 rounded-lg overflow-hidden border border-cyan-500/20 relative">
-          <div className="absolute top-2 left-2 z-10">
-            <h3 className="text-xs font-bold text-cyan-400 tracking-wider">3D MODEL</h3>
-          </div>
+        {/* Middle Row: Telemetry HUD - 12% */}
+        <div className="flex-[1.2] bg-slate-900 rounded-lg border border-cyan-500/30 px-4 py-2 flex items-center justify-around min-h-0">
+          <TelemetryItem icon="↑" label="ALT" value={`${(position?.alt || 35).toFixed(1)} m`} />
+          <TelemetryItem icon="→" label="SPD" value={`${velocity.speed.toFixed(1)} m/s`} />
+          <TelemetryItem icon="⟳" label="HDG" value={`${orientation.yaw.toFixed(0)}°`} />
+          <TelemetryItem icon="⚡" label="BATT" value={`${battery.percentage}%`} />
+          <TelemetryItem icon="🌡" label="TEMP" value={`${sensors.temperature}°C`} />
+          <TelemetryItem icon="⏱" label="FLT" value={formatFlightTime(flightTime)} />
+          <TelemetryItem icon="🕐" label="UTC" value={new Date().toLocaleTimeString('en-US', { hour12: false })} />
+        </div>
+
+        {/* Bottom Row: 5 Panels - 38% */}
+        <div className="flex-[3.8] grid grid-cols-5 gap-1.5 min-h-0">
           
-          <Canvas className="bg-gradient-to-b from-slate-900 to-slate-950">
-            <Suspense fallback={null}>
-              <PerspectiveCamera makeDefault position={[2, 1.5, 2]} />
-              <OrbitControls enableZoom={true} autoRotate autoRotateSpeed={0.5} />
-              <ambientLight intensity={0.4} />
-              <directionalLight position={[5, 10, 5]} intensity={1} castShadow />
-              <pointLight position={[-5, 5, -5]} intensity={0.5} color="#06b6d4" />
-              <Environment preset="night" />
-              
-              <DroneModel3D
-                rotation={orientation || { roll: 0, pitch: 0, yaw: 0 }}
-                sensors={{
-                  motors: [true, true, true, true],
-                  lidar_active: sensors?.lidar_active ?? true,
-                  gps_enabled: sensors?.gps_enabled ?? true,
-                  camera_active: true,
-                }}
-                threats={[]}
-              />
-              
-              {/* Ground Grid */}
-              <gridHelper args={[10, 20, '#1e3a5f', '#0f172a']} position={[0, -1, 0]} />
-            </Suspense>
-          </Canvas>
+          {/* Sensors Panel */}
+          <div className="bg-slate-900 rounded-lg border border-cyan-500/30 p-2 overflow-hidden flex flex-col">
+            <h3 className="text-xs font-bold text-cyan-400 mb-2 flex items-center gap-1.5 flex-shrink-0">
+              <Activity className="w-3.5 h-3.5" />
+              SENSORS
+            </h3>
+            <div className="space-y-1 overflow-auto flex-1 min-h-0">
+              <SensorStatus name="GPS" active={sensors.gps_enabled} status="LOCKED" />
+              <SensorStatus name="LIDAR" active={sensors.lidar_active} status="SCANNING" />
+              <SensorStatus name="VIO" active={sensors.vio_tracking} status="TRACKING" />
+              <SensorStatus name="IMU" active={true} status="NOMINAL" />
+              <SensorStatus name="COMPASS" active={true} status="CAL" />
+              <SensorStatus name="BARO" active={true} status="OK" />
+            </div>
+          </div>
 
-          {/* Orientation Overlay */}
-          <div className="absolute bottom-3 left-3 right-3 bg-slate-950/90 backdrop-blur-sm rounded p-2 border border-cyan-500/30">
-            <div className="grid grid-cols-3 gap-2 text-xs font-mono">
+          {/* Threat Radar */}
+          <div className="bg-slate-900 rounded-lg border border-cyan-500/30 p-2 relative overflow-hidden">
+            <ThreatRadar 
+              threats={[
+                { id: '1', bearing: 45, distance: 450, level: 'MEDIUM' as const, type: 'RF' },
+                { id: '2', bearing: 180, distance: 800, level: 'LOW' as const, type: 'ACOUSTIC' },
+              ]} 
+              range={1000}
+            />
+          </div>
+
+          {/* FSM State */}
+          <div className="bg-slate-900 rounded-lg border border-cyan-500/30 p-2 overflow-hidden flex flex-col">
+            <h3 className="text-xs font-bold text-cyan-400 mb-2 flex items-center gap-1.5 flex-shrink-0">
+              <Cpu className="w-3.5 h-3.5" />
+              FSM STATE
+            </h3>
+            <div className="flex-1 overflow-auto min-h-0">
+              <FSMCompact currentState={currentState} />
+            </div>
+          </div>
+
+          {/* Celestial Nav */}
+          <div className="bg-slate-900 rounded-lg border border-cyan-500/30 p-2 relative flex flex-col">
+            <h3 className="text-xs font-bold text-cyan-400 mb-1 flex items-center gap-1.5 flex-shrink-0">
+              <Star className="w-3.5 h-3.5" />
+              CELESTIAL NAV
+            </h3>
+            <div className="flex-1 flex items-center justify-center">
               <div className="text-center">
-                <span className="text-cyan-400">ROLL</span>
-                <div className="text-white">{(orientation?.roll || 0).toFixed(1)}°</div>
+                <div className="text-3xl mb-1">🌙</div>
+                <div className="text-[10px] text-slate-400">GPS-Denied Mode</div>
+                <div className="text-xs text-green-400 font-bold mt-1">READY</div>
               </div>
-              <div className="text-center">
-                <span className="text-cyan-400">PITCH</span>
-                <div className="text-white">{(orientation?.pitch || 0).toFixed(1)}°</div>
-              </div>
-              <div className="text-center">
-                <span className="text-cyan-400">YAW</span>
-                <div className="text-white">{(orientation?.yaw || 0).toFixed(1)}°</div>
+            </div>
+            <div className="bg-slate-950/90 rounded p-1.5 text-[10px] border border-cyan-500/30 flex-shrink-0">
+              <div className="flex justify-between">
+                <span className="text-slate-400">Stars Locked</span>
+                <span className="text-cyan-400 font-bold">3</span>
               </div>
             </div>
           </div>
-        </div>
 
-        {/* Telemetry HUD - Full width x 1 row */}
-        <div className="col-span-12 row-span-1 bg-slate-900 rounded-lg border border-cyan-500/20 p-3">
-          <TelemetryHUD
-            altitude={position?.alt || 0}
-            speed={5.2}
-            heading={orientation?.yaw || 0}
-            battery={battery || { percentage: 85, voltage: 12.4, current: 8.2 }}
-            temperature={42}
-            satellites={12}
-            signalStrength={92}
-            flightTime={flightTime}
-          />
-        </div>
-
-        {/* Bottom Panels - 5 panels */}
-        
-        {/* Sensors */}
-        <div className="col-span-2 row-span-1 bg-slate-900 rounded-lg border border-cyan-500/20 p-2 overflow-hidden">
-          <SensorPanel
-            sensors={{
-              gps_enabled: sensors?.gps_enabled ?? true,
-              lidar_active: sensors?.lidar_active ?? true,
-              camera_active: true,
-              imu_status: 'OK',
-              barometer: 1013,
-              motors: [true, true, true, true],
-              cpu_usage: 45,
-              memory_usage: 62,
-            }}
-          />
-        </div>
-
-        {/* Threat Radar */}
-        <div className="col-span-3 row-span-1 bg-slate-900 rounded-lg border border-cyan-500/20 p-2">
-          <ThreatRadar
-            threats={[
-              { id: '1', bearing: 45, distance: 450, level: 'MEDIUM' as const, type: 'RF' },
-              { id: '2', bearing: 180, distance: 800, level: 'LOW' as const, type: 'ACOUSTIC' },
-            ]}
-            range={1000}
-          />
-        </div>
-
-        {/* FSM State */}
-        <div className="col-span-2 row-span-1 bg-slate-900 rounded-lg border border-cyan-500/20 p-2">
-          <FSMVisualizer
-            currentState={typeof state === 'string' ? state : state?.state || 'HOVER'}
-            availableTransitions={['WAYPOINT', 'RTH', 'LANDING']}
-          />
-        </div>
-
-        {/* Celestial (placeholder) */}
-        <div className="col-span-2 row-span-1 bg-slate-900 rounded-lg border border-cyan-500/20 p-2 flex flex-col">
-          <h3 className="text-xs font-bold text-cyan-400 tracking-wider mb-2">CELESTIAL NAV</h3>
-          <div className="flex-1 flex items-center justify-center">
-            <div className="text-center">
-              <div className="text-4xl mb-1">🌙</div>
-              <div className="text-xs text-slate-400">GPS-Denied Ready</div>
-              <div className="text-xs text-cyan-400 font-mono mt-1">3 STARS LOCKED</div>
+          {/* FPV Camera */}
+          <div className="bg-slate-900 rounded-lg border border-cyan-500/30 overflow-hidden relative">
+            <div className="absolute top-2 left-2 bg-red-500/20 backdrop-blur px-2 py-0.5 rounded text-[10px] font-bold text-red-400 z-10 flex items-center gap-1">
+              <div className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+              FPV CAM
             </div>
+            <FPVStream connected={connected} />
           </div>
-        </div>
-
-        {/* FPV Stream */}
-        <div className="col-span-3 row-span-1 bg-slate-900 rounded-lg border border-cyan-500/20 overflow-hidden">
-          <FPVStream connected={connected} />
         </div>
       </div>
 
-      {/* Alert Sound */}
+      {/* Sound Effects */}
       <audio ref={alertAudioRef} src="/sounds/alert-high.mp3" preload="auto" />
     </div>
   );
@@ -302,9 +338,98 @@ function StatusIndicator({
   };
 
   return (
-    <div className={`border rounded px-2.5 py-1 ${colors[status]}`}>
-      <div className="text-[10px] opacity-70 tracking-wider">{label}</div>
-      <div className="text-xs font-mono font-bold">{value}</div>
+    <div className={`border rounded px-2 py-0.5 ${colors[status]}`}>
+      <div className="text-[9px] opacity-70 tracking-wider">{label}</div>
+      <div className="text-[11px] font-mono font-bold">{value}</div>
+    </div>
+  );
+}
+
+// Quick Stat Component
+function QuickStat({ label, value, unit, color = 'cyan' }: { 
+  label: string; 
+  value: string; 
+  unit: string; 
+  color?: 'cyan' | 'red' | 'green';
+}) {
+  const colors = {
+    cyan: 'border-cyan-500/30 text-cyan-400',
+    red: 'border-red-500/30 text-red-400 animate-pulse',
+    green: 'border-green-500/30 text-green-400'
+  };
+
+  return (
+    <div className={`bg-slate-900 border ${colors[color]} rounded-lg p-1.5 flex flex-col justify-center`}>
+      <div className="text-[10px] text-slate-400 mb-0.5">{label}</div>
+      <div className="flex items-baseline gap-0.5">
+        <span className="text-lg font-bold font-mono leading-none">{value}</span>
+        <span className="text-[10px] text-slate-500">{unit}</span>
+      </div>
+    </div>
+  );
+}
+
+// Telemetry Item Component
+function TelemetryItem({ icon, label, value }: { icon: string; label: string; value: string }) {
+  return (
+    <div className="flex items-center gap-2">
+      <div className="text-xl">{icon}</div>
+      <div>
+        <div className="text-[10px] text-slate-400">{label}</div>
+        <div className="text-sm font-mono font-bold text-cyan-400">{value}</div>
+      </div>
+    </div>
+  );
+}
+
+// Sensor Status Component
+function SensorStatus({ name, active, status }: { name: string; active: boolean; status: string }) {
+  return (
+    <div className="flex items-center justify-between p-1.5 rounded bg-slate-800/50 border border-slate-700/50">
+      <div className="flex items-center gap-1.5">
+        <div className={`w-1.5 h-1.5 rounded-full ${active ? 'bg-green-500' : 'bg-slate-600'}`} />
+        <span className="text-[10px] font-medium text-slate-300">{name}</span>
+      </div>
+      <span className={`text-[10px] font-mono ${active ? 'text-green-400' : 'text-slate-500'}`}>
+        {active ? status : 'OFF'}
+      </span>
+    </div>
+  );
+}
+
+// FSM Compact Visualizer
+function FSMCompact({ currentState }: { currentState: string }) {
+  const states = [
+    { name: 'IDLE', icon: '⏸' },
+    { name: 'TAKEOFF', icon: '🛫' },
+    { name: 'HOVER', icon: '⏸' },
+    { name: 'NAVIGATE', icon: '🧭' },
+    { name: 'AVOID', icon: '⚠️' },
+    { name: 'RTH', icon: '🏠' },
+    { name: 'LAND', icon: '🛬' }
+  ];
+
+  return (
+    <div className="space-y-0.5">
+      {states.map(state => (
+        <div 
+          key={state.name}
+          className={`
+            px-1.5 py-1 rounded text-[10px] font-medium transition-all
+            flex items-center gap-1.5
+            ${currentState === state.name || (currentState === 'HOVER' && state.name === 'HOVER')
+              ? 'bg-cyan-500/20 border border-cyan-500 text-cyan-300' 
+              : 'bg-slate-800/30 text-slate-500 border border-transparent'
+            }
+          `}
+        >
+          <span className="text-sm">{state.icon}</span>
+          <span className="flex-1">{state.name}</span>
+          {(currentState === state.name || (currentState === 'HOVER' && state.name === 'HOVER')) && (
+            <div className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
+          )}
+        </div>
+      ))}
     </div>
   );
 }
@@ -314,7 +439,7 @@ function MapView({
   position, 
   trajectory 
 }: { 
-  position?: { lat: number; lon: number; alt?: number }; 
+  position?: { lat: number; lon: number }; 
   trajectory: Array<{ lat: number; lon: number }>;
 }) {
   const lat = position?.lat || 48.8566;
