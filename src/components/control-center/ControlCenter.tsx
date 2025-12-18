@@ -28,6 +28,13 @@ import { SentinelConfig } from './SentinelConfig';
 import { BrainConfig } from './BrainConfig';
 import { CommunicationConfig } from './CommunicationConfig';
 import { DiagnosticsConfig } from './DiagnosticsConfig';
+import { PerceptionConfig } from './PerceptionConfig';
+import { MissionConfig } from './MissionConfig';
+import { CameraConfig } from './CameraConfig';
+import { PowerConfig } from './PowerConfig';
+import { ThermalConfig } from './ThermalConfig';
+import { SwarmConfig } from './SwarmConfig';
+import { PayloadConfig } from './PayloadConfig';
 import { IntelligenceMonitor } from './IntelligenceMonitor';
 import { ROS2Communication } from './ROS2Communication';
 import { DecisionLogs } from './DecisionLogs';
@@ -144,13 +151,13 @@ export function ControlCenter({ onClose }: ControlCenterProps) {
                 {activeModule === 'brain' && <BrainConfig />}
                 {activeModule === 'communication' && <CommunicationConfig />}
                 {activeModule === 'diagnostics' && <DiagnosticsConfig />}
-                {activeModule === 'perception' && <PlaceholderConfig name="Perception" count={64} />}
-                {activeModule === 'mission' && <PlaceholderConfig name="Mission" count={48} />}
-                {activeModule === 'camera' && <PlaceholderConfig name="Camera" count={42} />}
-                {activeModule === 'power' && <PlaceholderConfig name="Power" count={38} />}
-                {activeModule === 'thermal' && <PlaceholderConfig name="Thermal" count={32} />}
-                {activeModule === 'swarm' && <PlaceholderConfig name="Swarm" count={56} />}
-                {activeModule === 'payload' && <PlaceholderConfig name="Payload" count={44} />}
+                {activeModule === 'perception' && <PerceptionConfig />}
+                {activeModule === 'mission' && <MissionConfig />}
+                {activeModule === 'camera' && <CameraConfig />}
+                {activeModule === 'power' && <PowerConfig />}
+                {activeModule === 'thermal' && <ThermalConfig />}
+                {activeModule === 'swarm' && <SwarmConfig />}
+                {activeModule === 'payload' && <PayloadConfig />}
               </div>
             </div>
           </TabsContent>
@@ -213,24 +220,6 @@ function ModuleButton({
         )}
       </div>
     </button>
-  );
-}
-
-// Placeholder for modules not yet implemented
-function PlaceholderConfig({ name, count }: { name: string; count: number }) {
-  return (
-    <div className="bg-slate-900 border border-slate-800 rounded-lg p-6">
-      <h2 className="text-xl font-bold text-cyan-400 mb-2">{name} Module</h2>
-      <p className="text-slate-400 mb-6">{count} functions available for configuration</p>
-      
-      <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-8 text-center">
-        <div className="text-4xl mb-4">🔧</div>
-        <p className="text-slate-400">Configuration panel coming soon</p>
-        <p className="text-xs text-slate-500 mt-2">
-          This module contains {count} configurable parameters
-        </p>
-      </div>
-    </div>
   );
 }
 
