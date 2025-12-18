@@ -31,6 +31,7 @@ import {
 import VisualizationPanel from './components/VisualizationPanel'
 import { NavigationMap } from './components/NavigationMap'
 import { ShieldAuthModal } from './components/shield'
+import { HcsAuthPage } from './components/hcs'
 import { useRosBridge } from './lib/ros'
 import { predictSunObservation } from './lib/ephemeris'
 import { cn } from './lib/utils'
@@ -94,7 +95,12 @@ export default function App() {
   } = useRosBridge()
 
   // Mission state (mock for now)
-  const [mission] = useState<{ name: string; waypoints: Array<{ lat: number; lon: number; alt: number }> } | null>(null)
+  const [mission, _setMission] = useState<{ name: string; waypoints: Array<{ lat: number; lon: number; alt: number }> } | null>(null)
+  void _setMission // Reserved for future mission loading from HCS Auth
+  
+  // HCS Auth Page state
+  const [showHcsAuth, setShowHcsAuth] = useState(false)
+  const [hcsCode, setHcsCode] = useState<string | null>(null)
 
   // HCS-SHIELD Authentication state
   const [isAuthenticated, setIsAuthenticated] = useState(false)
@@ -148,6 +154,14 @@ export default function App() {
   }, [isAuthenticated])
   void _requireAuth // Suppress unused warning - reserved for QR mission unlock
 
+  // Handle HCS Auth completion
+  const handleHcsAuthComplete = useCallback((code: string) => {
+    setHcsCode(code)
+    setIsAuthenticated(true)
+    setPilotScore(0.95) // High score for completing full auth
+    console.log('✅ HCS Code generated:', code)
+  }, [])
+
   // For celestial visualization (existing component)
   const navState: NavigationState = {
     timestampMs: Date.now(),
@@ -165,6 +179,16 @@ export default function App() {
 
   // Current threat level
   const threatLevel = threat?.level ?? 'CLEAR'
+
+  // Show HCS Auth Page if active
+  if (showHcsAuth) {
+    return (
+      <HcsAuthPage 
+        onClose={() => setShowHcsAuth(false)}
+        onComplete={handleHcsAuthComplete}
+      />
+    );
+  }
 
   return (
     <div className="min-h-dvh bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-foreground">
@@ -206,6 +230,14 @@ export default function App() {
               <Battery className="h-3 w-3" />
               87%
             </div>
+
+            {/* HCS Code */}
+            {hcsCode && (
+              <div className="flex items-center gap-1.5 rounded-full bg-cyan-500/20 px-2.5 py-1 text-xs font-medium text-cyan-400">
+                <Shield className="h-3 w-3" />
+                {hcsCode}
+              </div>
+            )}
 
             {/* Threat Level */}
             {threatLevel !== 'CLEAR' && (
@@ -476,16 +508,40 @@ export default function App() {
               <Shield className="h-4 w-4" />
               Authentification pilote requise pour accéder aux commandes
             </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setShowHcsAuth(true)}
+                className="rounded-lg bg-gradient-to-r from-cyan-600 to-blue-600 px-4 py-1.5 text-sm font-medium text-white hover:from-cyan-500 hover:to-blue-500"
+              >
+                🔐 HCS-SHIELD Auth (Full)
+              </button>
+              <button
+                onClick={() => {
+                  setAuthMode('full')
+                  setAuthTitle('Authentification Pilote')
+                  setAuthDescription('Vérification cognitive HCS-SHIELD requise')
+                  setShowAuthModal(true)
+                }}
+                className="rounded-lg bg-slate-700 px-4 py-1.5 text-sm font-medium text-white hover:bg-slate-600"
+              >
+                Quick Auth
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Mission Load Button (when authenticated) */}
+        {isAuthenticated && !mission && (
+          <div className="mt-6 flex items-center justify-between rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3">
+            <div className="flex items-center gap-2 text-sm text-emerald-300">
+              <Navigation className="h-4 w-4" />
+              Pilote authentifié - Prêt à charger une mission
+            </div>
             <button
-              onClick={() => {
-                setAuthMode('full')
-                setAuthTitle('Authentification Pilote')
-                setAuthDescription('Vérification cognitive HCS-SHIELD requise')
-                setShowAuthModal(true)
-              }}
-              className="rounded-lg bg-cyan-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-cyan-500"
+              onClick={() => setShowHcsAuth(true)}
+              className="rounded-lg bg-emerald-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-emerald-500"
             >
-              S'authentifier
+              📡 Load Mission
             </button>
           </div>
         )}
