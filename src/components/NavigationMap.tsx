@@ -2,7 +2,7 @@
  * CORTEX-U7 Navigation Map Component
  * 
  * Displays drone position, waypoints, and trajectory on an interactive map.
- * Uses canvas-based rendering for lightweight operation without Leaflet dependency.
+ * Uses MapBox for satellite imagery with canvas overlay for drone/waypoints.
  */
 
 import { useEffect, useRef, useState } from 'react'
@@ -25,11 +25,15 @@ const DEFAULT_CENTER = { lat: 48.8566, lon: 2.3522 }
 const TILE_SIZE = 256
 const INITIAL_ZOOM = 15
 
+// MapBox token from environment
+const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN || ''
+
 export function NavigationMap({ position, waypoints = [], trajectory = [] }: NavigationMapProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const [dimensions, setDimensions] = useState({ width: 400, height: 320 })
   const [zoom] = useState(INITIAL_ZOOM)
+  const [mapUrl, setMapUrl] = useState('')
 
   // Update dimensions on resize
   useEffect(() => {
@@ -45,7 +49,19 @@ export function NavigationMap({ position, waypoints = [], trajectory = [] }: Nav
     return () => window.removeEventListener('resize', updateDimensions)
   }, [])
 
-  // Draw map
+  // Update MapBox static image URL
+  useEffect(() => {
+    const lat = position?.lat ?? DEFAULT_CENTER.lat
+    const lon = position?.lon ?? DEFAULT_CENTER.lon
+    
+    if (MAPBOX_TOKEN) {
+      // MapBox Static Images API - satellite-streets style
+      const url = `https://api.mapbox.com/styles/v1/mapbox/satellite-streets-v12/static/${lon},${lat},${zoom},0/${Math.round(dimensions.width)}x${Math.round(dimensions.height)}@2x?access_token=${MAPBOX_TOKEN}`
+      setMapUrl(url)
+    }
+  }, [position?.lat, position?.lon, zoom, dimensions])
+
+  // Draw overlay (drone, waypoints, trajectory)
   useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas) return
@@ -57,16 +73,19 @@ export function NavigationMap({ position, waypoints = [], trajectory = [] }: Nav
     canvas.width = width
     canvas.height = height
 
-    // Clear canvas
-    ctx.fillStyle = '#0f172a'
-    ctx.fillRect(0, 0, width, height)
+    // Clear canvas (transparent for overlay)
+    ctx.clearRect(0, 0, width, height)
+
+    // If no MapBox token, draw grid background
+    if (!MAPBOX_TOKEN) {
+      ctx.fillStyle = '#0f172a'
+      ctx.fillRect(0, 0, width, height)
+      drawGrid(ctx, width, height)
+    }
 
     // Center on drone position
     const centerLat = position?.lat ?? DEFAULT_CENTER.lat
     const centerLon = position?.lon ?? DEFAULT_CENTER.lon
-
-    // Draw grid
-    drawGrid(ctx, width, height)
 
     // Draw coordinate labels
     drawCoordinates(ctx, width, height, centerLat, centerLon, zoom)
@@ -90,10 +109,24 @@ export function NavigationMap({ position, waypoints = [], trajectory = [] }: Nav
   }, [position, waypoints, trajectory, dimensions, zoom])
 
   return (
-    <div ref={containerRef} className="relative h-full w-full bg-slate-950">
+    <div ref={containerRef} className="relative h-full w-full bg-slate-950 overflow-hidden">
+      {/* MapBox satellite background */}
+      {mapUrl && (
+        <img
+          src={mapUrl}
+          alt="Satellite map"
+          className="absolute inset-0 h-full w-full object-cover"
+          onError={(e) => {
+            // Hide on error, fallback to canvas grid
+            (e.target as HTMLImageElement).style.display = 'none'
+          }}
+        />
+      )}
+      
+      {/* Canvas overlay for drone, waypoints, trajectory */}
       <canvas
         ref={canvasRef}
-        className="h-full w-full"
+        className="absolute inset-0 h-full w-full"
         style={{ display: 'block' }}
       />
       
