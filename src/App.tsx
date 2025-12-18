@@ -32,6 +32,7 @@ import VisualizationPanel from './components/VisualizationPanel'
 import { NavigationMap } from './components/NavigationMap'
 import { ShieldAuthModal } from './components/shield'
 import { HcsAuthPage } from './components/hcs'
+import { DashboardPro } from './components/dashboard'
 import { useRosBridge } from './lib/ros'
 import { predictSunObservation } from './lib/ephemeris'
 import { cn } from './lib/utils'
@@ -101,6 +102,9 @@ export default function App() {
   // HCS Auth Page state
   const [showHcsAuth, setShowHcsAuth] = useState(false)
   const [hcsCode, setHcsCode] = useState<string | null>(null)
+  
+  // Dashboard Pro state
+  const [showDashboardPro, setShowDashboardPro] = useState(false)
 
   // HCS-SHIELD Authentication state
   const [isAuthenticated, setIsAuthenticated] = useState(false)
@@ -180,6 +184,15 @@ export default function App() {
   // Current threat level
   const threatLevel = threat?.level ?? 'CLEAR'
 
+  // Show Dashboard Pro if active
+  if (showDashboardPro) {
+    return (
+      <DashboardPro 
+        onClose={() => setShowDashboardPro(false)}
+      />
+    );
+  }
+
   // Show HCS Auth Page if active
   if (showHcsAuth) {
     return (
@@ -251,6 +264,15 @@ export default function App() {
                 {THREAT_LABELS[threatLevel]}
               </div>
             )}
+
+            {/* Dashboard Pro Button */}
+            <button
+              onClick={() => setShowDashboardPro(true)}
+              className="flex items-center gap-1.5 rounded-full bg-gradient-to-r from-cyan-500/20 to-blue-500/20 px-3 py-1.5 text-xs font-bold text-cyan-400 hover:from-cyan-500/30 hover:to-blue-500/30 transition-all border border-cyan-500/30"
+            >
+              <Radar className="h-3 w-3" />
+              Dashboard Pro
+            </button>
 
             {/* Pilot Authentication Status */}
             <button

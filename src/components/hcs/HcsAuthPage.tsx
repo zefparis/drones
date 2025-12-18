@@ -4,7 +4,7 @@
  */
 
 import { useState, useCallback } from 'react';
-import { Shield, ChevronLeft, CheckCircle, Clock, Copy } from 'lucide-react';
+import { Shield, CheckCircle, Clock, Copy, Home } from 'lucide-react';
 
 import {
   StroopTestFull,
@@ -131,9 +131,11 @@ export function HcsAuthPage({ onClose, onComplete }: HcsAuthPageProps) {
             {onClose && (
               <button
                 onClick={onClose}
-                className="p-2 text-slate-400 hover:text-white transition-colors"
+                className="flex items-center gap-2 px-3 py-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
+                title="Retour à l'accueil"
               >
-                <ChevronLeft className="w-5 h-5" />
+                <Home className="w-5 h-5" />
+                <span className="text-sm hidden sm:inline">Accueil</span>
               </button>
             )}
             <Shield className="w-8 h-8 text-cyan-400" />
