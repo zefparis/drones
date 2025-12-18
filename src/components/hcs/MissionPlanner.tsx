@@ -1,10 +1,21 @@
 /**
- * Mission Planner - Plan mission with waypoints
- * Simple grid-based waypoint editor (no external map dependency)
+ * Mission Planner - Plan mission with waypoints on interactive Leaflet map
+ * Click on map to add waypoints, edit altitude and actions
  */
 
-import { useState, useCallback } from 'react';
-import { MapPin, Plus, Trash2, Navigation, Target } from 'lucide-react';
+import { useState, useCallback, useEffect } from 'react';
+import { MapPin, Trash2, Navigation } from 'lucide-react';
+import { MapContainer, TileLayer, Marker, Polyline, useMapEvents } from 'react-leaflet';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
+
+// Fix Leaflet default marker icon issue
+delete (L.Icon.Default.prototype as unknown as { _getIconUrl?: unknown })._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+  iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+});
 
 export interface Waypoint {
   id: number;
@@ -41,12 +52,15 @@ const PRIORITIES = [
   { value: 'NONE', label: 'None', color: 'text-slate-400' },
 ] as const;
 
-const ACTIONS = [
-  { value: 'HOVER', label: 'Hover' },
-  { value: 'SCAN', label: 'Scan' },
-  { value: 'DROP', label: 'Drop' },
-  { value: 'RTH', label: 'Return Home' },
-] as const;
+// Map click handler component
+function MapClickHandler({ onMapClick }: { onMapClick: (lat: number, lon: number) => void }) {
+  useMapEvents({
+    click(e: L.LeafletMouseEvent) {
+      onMapClick(e.latlng.lat, e.latlng.lng);
+    }
+  });
+  return null;
+}
 
 export function MissionPlanner({ onComplete, defaultCenter }: MissionPlannerProps) {
   const [mission, setMission] = useState<Partial<MissionData>>({
@@ -59,34 +73,35 @@ export function MissionPlanner({ onComplete, defaultCenter }: MissionPlannerProp
 
   const [waypoints, setWaypoints] = useState<Waypoint[]>([]);
   const [nextId, setNextId] = useState(1);
-  const [editingWp, setEditingWp] = useState<number | null>(null);
+  const [isClient, setIsClient] = useState(false);
 
   const center = defaultCenter || { lat: 43.83, lon: 4.36 }; // Alès default
 
-  const addWaypoint = useCallback(() => {
-    const offset = waypoints.length * 0.001;
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  const handleMapClick = useCallback((lat: number, lon: number) => {
     const newWp: Waypoint = {
       id: nextId,
-      lat: center.lat + offset,
-      lon: center.lon + offset,
+      lat,
+      lon,
       alt: 50,
       action: 'HOVER',
     };
     setWaypoints(prev => [...prev, newWp]);
     setNextId(prev => prev + 1);
-    setEditingWp(newWp.id);
-  }, [waypoints.length, nextId, center]);
+  }, [nextId]);
 
-  const updateWaypoint = useCallback((id: number, updates: Partial<Waypoint>) => {
+  const updateAltitude = useCallback((id: number, alt: number) => {
     setWaypoints(prev => prev.map(wp => 
-      wp.id === id ? { ...wp, ...updates } : wp
+      wp.id === id ? { ...wp, alt } : wp
     ));
   }, []);
 
   const removeWaypoint = useCallback((id: number) => {
     setWaypoints(prev => prev.filter(wp => wp.id !== id));
-    if (editingWp === id) setEditingWp(null);
-  }, [editingWp]);
+  }, []);
 
   const handleSubmit = () => {
     if (waypoints.length < 2) {
@@ -97,6 +112,7 @@ export function MissionPlanner({ onComplete, defaultCenter }: MissionPlannerProp
     onComplete({
       ...mission,
       waypoints,
+      gpsAllowed: mission.priority !== 'STEALTH',
     } as MissionData);
   };
 
@@ -169,118 +185,102 @@ export function MissionPlanner({ onComplete, defaultCenter }: MissionPlannerProp
 
       {/* GPS Warning */}
       {mission.priority === 'STEALTH' && (
-        <div className="bg-purple-500/10 border border-purple-500/30 rounded-lg p-3 mb-6 flex items-center gap-2">
-          <span className="text-purple-400">🛡️</span>
-          <span className="text-sm text-purple-300">
+        <div className="bg-amber-500/10 border border-amber-500/50 rounded-lg p-3 mb-6 flex items-center gap-2">
+          <span className="text-amber-400">⚠️</span>
+          <span className="text-sm text-amber-300">
             STEALTH mode: GPS will be disabled. Navigation via celestial + VIO only.
           </span>
         </div>
       )}
 
-      {/* Waypoints Section */}
+      {/* Interactive Map */}
       <div className="mb-6">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-semibold text-slate-300">
-            Waypoints ({waypoints.length})
-          </h3>
-          <button
-            onClick={addWaypoint}
-            className="flex items-center gap-1 px-3 py-1.5 bg-cyan-500/20 text-cyan-400 rounded-lg text-sm hover:bg-cyan-500/30 transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            Add Waypoint
-          </button>
+        <label className="block text-sm text-slate-400 mb-2">
+          Waypoints ({waypoints.length}) - Click on map to add
+        </label>
+        <div className="h-80 rounded-lg overflow-hidden border border-slate-700">
+          {isClient && (
+            <MapContainer 
+              center={[center.lat, center.lon]}
+              zoom={13}
+              style={{ height: '100%', width: '100%' }}
+              className="z-0"
+            >
+              <TileLayer 
+                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                attribution='© OpenStreetMap'
+              />
+              <MapClickHandler onMapClick={handleMapClick} />
+              
+              {/* Markers */}
+              {waypoints.map((wp) => (
+                <Marker 
+                  key={wp.id} 
+                  position={[wp.lat, wp.lon]}
+                />
+              ))}
+              
+              {/* Trajectory line */}
+              {waypoints.length > 1 && (
+                <Polyline 
+                  positions={waypoints.map(wp => [wp.lat, wp.lon] as [number, number])}
+                  color="#06b6d4"
+                  weight={3}
+                  opacity={0.8}
+                />
+              )}
+            </MapContainer>
+          )}
         </div>
+      </div>
 
+      {/* Waypoints List */}
+      <div className="mb-6">
+        <h3 className="font-semibold mb-3 text-slate-300">Waypoint Details</h3>
         {waypoints.length === 0 ? (
-          <div className="bg-slate-800/50 rounded-lg p-8 text-center">
-            <MapPin className="w-8 h-8 text-slate-600 mx-auto mb-2" />
+          <div className="bg-slate-800/50 rounded-lg p-6 text-center">
+            <MapPin className="w-10 h-10 text-slate-600 mx-auto mb-2" />
             <p className="text-slate-500">No waypoints yet</p>
-            <p className="text-sm text-slate-600">Click "Add Waypoint" to start planning</p>
+            <p className="text-sm text-slate-600">Click on the map to add waypoints</p>
           </div>
         ) : (
-          <div className="space-y-2 max-h-64 overflow-y-auto">
+          <div className="space-y-2 max-h-48 overflow-y-auto">
             {waypoints.map((wp, idx) => (
-              <div
-                key={wp.id}
-                className={`bg-slate-800 rounded-lg p-3 border transition-colors ${
-                  editingWp === wp.id ? 'border-cyan-500' : 'border-slate-700'
-                }`}
+              <div 
+                key={wp.id} 
+                className="flex items-center gap-3 bg-slate-800/50 p-3 rounded-lg"
               >
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 rounded-full bg-cyan-500/20 text-cyan-400 flex items-center justify-center text-xs font-bold">
-                      {idx + 1}
-                    </div>
-                    <span className="text-sm text-white font-medium">WP{idx + 1}</span>
+                <div className="flex-shrink-0 w-8 h-8 rounded-full bg-cyan-500 text-white flex items-center justify-center font-bold text-sm">
+                  {idx + 1}
+                </div>
+                <div className="flex-1 grid grid-cols-3 gap-2 text-xs">
+                  <div>
+                    <span className="text-slate-500">Lat:</span>
+                    <span className="ml-1 font-mono text-white">{wp.lat.toFixed(6)}</span>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => setEditingWp(editingWp === wp.id ? null : wp.id)}
-                      className="text-slate-400 hover:text-cyan-400 transition-colors"
-                    >
-                      <Target className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => removeWaypoint(wp.id)}
-                      className="text-slate-400 hover:text-red-400 transition-colors"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                  <div>
+                    <span className="text-slate-500">Lon:</span>
+                    <span className="ml-1 font-mono text-white">{wp.lon.toFixed(6)}</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <span className="text-slate-500">Alt:</span>
+                    <input 
+                      type="number" 
+                      value={wp.alt}
+                      onChange={(e) => updateAltitude(wp.id, parseInt(e.target.value) || 50)}
+                      className="h-6 w-14 px-1 text-xs bg-slate-700 border border-slate-600 rounded text-white"
+                      min={10}
+                      max={500}
+                    />
+                    <span className="text-slate-500">m</span>
                   </div>
                 </div>
-
-                {editingWp === wp.id ? (
-                  <div className="grid grid-cols-4 gap-2 mt-2">
-                    <div>
-                      <label className="block text-xs text-slate-500 mb-1">Lat</label>
-                      <input
-                        type="number"
-                        value={wp.lat}
-                        onChange={(e) => updateWaypoint(wp.id, { lat: parseFloat(e.target.value) || 0 })}
-                        step="0.0001"
-                        className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1 text-sm text-white"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs text-slate-500 mb-1">Lon</label>
-                      <input
-                        type="number"
-                        value={wp.lon}
-                        onChange={(e) => updateWaypoint(wp.id, { lon: parseFloat(e.target.value) || 0 })}
-                        step="0.0001"
-                        className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1 text-sm text-white"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs text-slate-500 mb-1">Alt (m)</label>
-                      <input
-                        type="number"
-                        value={wp.alt}
-                        onChange={(e) => updateWaypoint(wp.id, { alt: parseInt(e.target.value) || 50 })}
-                        min={10}
-                        max={500}
-                        className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1 text-sm text-white"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs text-slate-500 mb-1">Action</label>
-                      <select
-                        value={wp.action}
-                        onChange={(e) => updateWaypoint(wp.id, { action: e.target.value as Waypoint['action'] })}
-                        className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1 text-sm text-white"
-                      >
-                        {ACTIONS.map(a => (
-                          <option key={a.value} value={a.value}>{a.label}</option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="text-xs text-slate-400">
-                    {wp.lat.toFixed(5)}, {wp.lon.toFixed(5)} @ {wp.alt}m • {wp.action}
-                  </div>
-                )}
+                <button 
+                  onClick={() => removeWaypoint(wp.id)}
+                  className="text-red-400 hover:text-red-300 hover:bg-red-500/10 p-2 rounded transition-colors"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
               </div>
             ))}
           </div>
@@ -302,7 +302,7 @@ export function MissionPlanner({ onComplete, defaultCenter }: MissionPlannerProp
             </div>
             <div>
               <span className="text-slate-500">GPS:</span>
-              <span className={`ml-2 ${mission.gpsAllowed ? 'text-green-400' : 'text-purple-400'}`}>
+              <span className={`ml-2 ${mission.gpsAllowed ? 'text-green-400' : 'text-amber-400'}`}>
                 {mission.gpsAllowed ? 'ENABLED' : 'DISABLED'}
               </span>
             </div>
@@ -316,7 +316,10 @@ export function MissionPlanner({ onComplete, defaultCenter }: MissionPlannerProp
         disabled={waypoints.length < 2}
         className="w-full py-3 bg-cyan-500 text-white rounded-lg font-semibold hover:bg-cyan-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
       >
-        Generate Mission QR
+        {waypoints.length < 2 
+          ? `Add ${2 - waypoints.length} more waypoint${2 - waypoints.length > 1 ? 's' : ''}` 
+          : 'Generate Mission QR'
+        }
       </button>
     </div>
   );

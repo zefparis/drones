@@ -295,31 +295,51 @@ export function HcsAuthPage({ onClose, onComplete }: HcsAuthPageProps) {
 
           {/* Profile Generated */}
           {phase === 'profile' && (
-            <div className="bg-slate-900 rounded-xl p-8 text-center">
-              <div className="text-6xl mb-4">✅</div>
-              <h2 className="text-2xl font-bold text-white mb-4">Profile Generated</h2>
+            <div className="bg-slate-900 rounded-xl p-8">
+              <div className="text-6xl mb-4 text-center">✅</div>
+              <h2 className="text-2xl font-bold text-white mb-6 text-center">Profile Generated</h2>
               
-              <div className="bg-slate-800 rounded-lg p-4 mb-6 max-w-md mx-auto">
-                <p className="text-sm text-slate-400 mb-2">Your HCS-U7 Code</p>
-                <p className="text-2xl font-mono font-bold text-cyan-400">{hcsCode}</p>
+              {/* Code HCS-U7 en sections claires */}
+              <div className="bg-slate-800 rounded-lg p-6 mb-6 max-w-md mx-auto space-y-3">
+                <div className="text-center text-slate-400 text-sm mb-4">
+                  Your HCS-U7 Cognitive Code
+                </div>
+                
+                <CodeSection label="Version" value="V:8.0" />
+                <CodeSection label="Algorithm" value="ALG:QS" />
+                <CodeSection label="Energy" value={hcsCode.match(/E:([HML])/)?.[1] || 'M'} />
+                <CodeSection label="Modulation" value={hcsCode.match(/MOD:([^|]+)/)?.[1] || ''} />
+                <CodeSection label="Cognition" value={hcsCode.match(/COG:([^|]+)/)?.[1] || ''} />
+                <CodeSection label="Signature" value={hcsCode.match(/QSIG:([^|]+)/)?.[1] || ''} />
+                <CodeSection label="Behavioral" value={hcsCode.match(/B3:([^|]+)/)?.[1] || ''} />
+                
+                {/* Code complet (caché par défaut) */}
+                <details className="mt-4">
+                  <summary className="text-xs text-slate-500 cursor-pointer hover:text-slate-400">
+                    Show full code
+                  </summary>
+                  <div className="mt-2 p-3 bg-slate-900 rounded text-xs font-mono break-all text-slate-300">
+                    {hcsCode}
+                  </div>
+                </details>
               </div>
 
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6 max-w-lg mx-auto">
+              <div className="grid grid-cols-3 md:grid-cols-7 gap-2 mb-6 max-w-2xl mx-auto">
                 {Object.entries(testResults).map(([key, result]) => (
-                  <div key={key} className="bg-slate-800/50 rounded-lg p-3">
-                    <p className="text-xs text-slate-500 capitalize">{key}</p>
-                    <p className="text-lg font-bold text-white">{(result as { score: number }).score}</p>
+                  <div key={key} className="bg-slate-800/50 rounded-lg p-3 text-center">
+                    <p className="text-xs text-slate-500 capitalize mb-1">{key}</p>
+                    <p className="text-xl font-bold text-cyan-400">{(result as { score: number }).score}</p>
                   </div>
                 ))}
               </div>
 
-              <p className="text-slate-400 mb-6">
+              <p className="text-slate-400 mb-6 text-center">
                 Your cognitive profile has been generated. Next: plan your mission.
               </p>
 
               <button
                 onClick={() => setPhase('mission')}
-                className="px-8 py-4 bg-cyan-500 text-white rounded-lg font-semibold text-lg hover:bg-cyan-400 transition-colors"
+                className="w-full px-8 py-4 bg-cyan-500 text-white rounded-lg font-semibold text-lg hover:bg-cyan-400 transition-colors"
               >
                 Plan Mission
               </button>
@@ -342,6 +362,16 @@ export function HcsAuthPage({ onClose, onComplete }: HcsAuthPageProps) {
           )}
         </main>
       </div>
+    </div>
+  );
+}
+
+// Helper Component for HCS Code sections
+function CodeSection({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-center justify-between border-b border-slate-700 pb-2">
+      <span className="text-sm text-slate-500">{label}</span>
+      <span className="font-mono text-sm text-cyan-400">{value}</span>
     </div>
   );
 }
