@@ -33,6 +33,7 @@ import { NavigationMap } from './components/NavigationMap'
 import { ShieldAuthModal } from './components/shield'
 import { HcsAuthPage } from './components/hcs'
 import { DashboardPro } from './components/dashboard'
+import { ControlCenter } from './components/control-center'
 import { useRosBridge } from './lib/ros'
 import { predictSunObservation } from './lib/ephemeris'
 import { cn } from './lib/utils'
@@ -105,6 +106,9 @@ export default function App() {
   
   // Dashboard Pro state
   const [showDashboardPro, setShowDashboardPro] = useState(false)
+  
+  // Control Center state
+  const [showControlCenter, setShowControlCenter] = useState(false)
 
   // HCS-SHIELD Authentication state
   const [isAuthenticated, setIsAuthenticated] = useState(false)
@@ -183,6 +187,15 @@ export default function App() {
 
   // Current threat level
   const threatLevel = threat?.level ?? 'CLEAR'
+
+  // Show Control Center if active
+  if (showControlCenter) {
+    return (
+      <ControlCenter 
+        onClose={() => setShowControlCenter(false)}
+      />
+    );
+  }
 
   // Show Dashboard Pro if active
   if (showDashboardPro) {
@@ -264,6 +277,15 @@ export default function App() {
                 {THREAT_LABELS[threatLevel]}
               </div>
             )}
+
+            {/* Control Center Button */}
+            <button
+              onClick={() => setShowControlCenter(true)}
+              className="flex items-center gap-1.5 rounded-full bg-gradient-to-r from-purple-500/20 to-indigo-500/20 px-3 py-1.5 text-xs font-bold text-purple-400 hover:from-purple-500/30 hover:to-indigo-500/30 transition-all border border-purple-500/30"
+            >
+              <Activity className="h-3 w-3" />
+              Control Center
+            </button>
 
             {/* Dashboard Pro Button */}
             <button
