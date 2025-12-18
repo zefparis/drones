@@ -16,6 +16,13 @@ export class QSigLocal {
   }
   
   /**
+   * Static sign method for convenience
+   */
+  public static async sign(data: string): Promise<string> {
+    return QSigLocal.getInstance().generateSignature(data);
+  }
+  
+  /**
    * Generate a quantum-resistant signature for cognitive data
    */
   generateSignature(data: unknown): string {

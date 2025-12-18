@@ -1,5 +1,5 @@
 /**
- * Digit Span Test - Memory Span (3 min)
+ * Digit Span Test - Memory Span (7 sequences max)
  * Tests short-term and working memory capacity
  */
 

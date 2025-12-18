@@ -1,5 +1,5 @@
 /**
- * Stroop Test - Full Version (2 min, 40 trials)
+ * Stroop Test - Quick Version (7 trials)
  * Tests cognitive inhibition and interference control
  */
 
@@ -41,7 +41,7 @@ interface StroopTestFullProps {
   totalTrials?: number;
 }
 
-export function StroopTestFull({ onComplete, totalTrials = 40 }: StroopTestFullProps) {
+export function StroopTestFull({ onComplete, totalTrials = 7 }: StroopTestFullProps) {
   const [phase, setPhase] = useState<'intro' | 'ready' | 'stimulus' | 'feedback' | 'complete'>('intro');
   const [trials, setTrials] = useState<Trial[]>([]);
   const [currentTrial, setCurrentTrial] = useState(0);

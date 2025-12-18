@@ -1,5 +1,5 @@
 /**
- * Trail Making Test - Cognitive Flexibility (3 min)
+ * Trail Making Test - Cognitive Flexibility (7 points)
  * Tests visual attention, processing speed, and task switching
  */
 
@@ -78,7 +78,7 @@ export function TrailMakingTest({ onComplete }: TrailMakingTestProps) {
   const canvasRef = useRef<HTMLDivElement>(null);
 
   const startPartA = useCallback(() => {
-    setPoints(generatePoints(8, 'A'));
+    setPoints(generatePoints(7, 'A'));
     setCurrentIndex(0);
     setErrors(0);
     setTrail([]);
@@ -87,7 +87,7 @@ export function TrailMakingTest({ onComplete }: TrailMakingTestProps) {
   }, []);
 
   const startPartB = useCallback(() => {
-    setPoints(generatePoints(10, 'B'));
+    setPoints(generatePoints(7, 'B'));
     setCurrentIndex(0);
     setErrors(0);
     setTrail([]);

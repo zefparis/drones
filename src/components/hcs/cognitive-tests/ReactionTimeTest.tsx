@@ -1,12 +1,12 @@
 /**
- * Reaction Time Test - Processing Speed (2 min)
+ * Reaction Time Test - Processing Speed (7 trials)
  * Measures simple and choice reaction time
  */
 
 import { useState, useCallback, useRef } from 'react';
 import { testResultsStore } from '../../../lib/hcs/storage/test-results-store';
 
-const TOTAL_TRIALS = 20;
+const TOTAL_TRIALS = 7;
 const MIN_DELAY = 1000;
 const MAX_DELAY = 3000;
 

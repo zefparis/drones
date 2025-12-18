@@ -28,16 +28,16 @@ export function QRCodeDisplay({
   const [showDestroy, setShowDestroy] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
 
-  // Generate QR code
+  // Generate QR code - BLACK/WHITE for maximum scanner compatibility
   useEffect(() => {
     QRCode.toDataURL(data, {
       width: 600,
-      margin: 2,
+      margin: 4,
+      errorCorrectionLevel: 'H',  // High error correction for drone camera
       color: {
-        dark: '#06b6d4',
-        light: '#0f172a'
-      },
-      errorCorrectionLevel: 'M'
+        dark: '#000000',    // BLACK (not cyan)
+        light: '#FFFFFF'    // WHITE (not slate)
+      }
     }).then(setQrDataUrl).catch(console.error);
   }, [data]);
 

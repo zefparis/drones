@@ -1,5 +1,5 @@
 /**
- * Go/No-Go Test - Inhibitory Control (2 min)
+ * Go/No-Go Test - Inhibitory Control (7 trials)
  * Tests response inhibition and impulse control
  */
 
@@ -37,7 +37,7 @@ interface GoNoGoTestProps {
   goProbability?: number;
 }
 
-export function GoNoGoTest({ onComplete, totalTrials = 50, goProbability = 0.75 }: GoNoGoTestProps) {
+export function GoNoGoTest({ onComplete, totalTrials = 7, goProbability = 0.75 }: GoNoGoTestProps) {
   const [phase, setPhase] = useState<'intro' | 'isi' | 'stimulus' | 'complete'>('intro');
   const [trials, setTrials] = useState<Trial[]>([]);
   const [currentTrial, setCurrentTrial] = useState(0);

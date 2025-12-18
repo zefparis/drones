@@ -30,6 +30,13 @@ export class B3Hash {
   }
   
   /**
+   * Static generate method for convenience
+   */
+  public static async generate(data: unknown): Promise<string> {
+    return B3Hash.getInstance().hash(data);
+  }
+  
+  /**
    * Generate B3 hash from cognitive data
    */
   hash(data: BiometricData | unknown): string {

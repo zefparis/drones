@@ -6,6 +6,8 @@
 import { hkdf } from '@noble/hashes/hkdf';
 import { sha256 } from '@noble/hashes/sha2';
 import type { MissionData } from '../../../components/hcs/MissionPlanner';
+import { B3Hash } from './b3-hash';
+import { QSigLocal } from './qsig-local';
 
 export interface EncryptedMissionPayload {
   version: string;
@@ -29,6 +31,7 @@ export interface CognitiveTestResults {
 
 /**
  * Generate HCS-U7 Code from cognitive test results
+ * Format: HCS-U7|V:8.0|ALG:QS|E:M|MOD:c75f25m0|COG:F97C100V7S15Cr36|QSIG:2ouz/n/kh/|B3:b1d985249e
  */
 export async function generateHCSCode(results: CognitiveTestResults): Promise<string> {
   const scores = Object.values(results).filter(Boolean).map(r => r?.score ?? 0);
@@ -37,31 +40,58 @@ export async function generateHCSCode(results: CognitiveTestResults): Promise<st
     throw new Error('Minimum 5 cognitive tests required');
   }
 
-  const avgScore = Math.round(scores.reduce((a, b) => a + b, 0) / scores.length);
-  
-  const stroopEffect = results.stroop?.stroopEffect ?? 0;
-  const reactionTime = results.reaction?.meanRT ?? 300;
-  const memorySpan = (results.digit?.forwardSpan ?? 4) + (results.digit?.backwardSpan ?? 3);
-  const inhibition = results.gonogo?.inhibitionScore ?? 50;
-  
-  const modality = stroopEffect > 50 ? 'V' : reactionTime < 250 ? 'S' : 'C';
-  const flexibility = Math.min(99, Math.round(((results.trail?.score ?? 50) + (results.nback?.dPrime ?? 1) * 20) / 2));
-  
-  const dataToHash = JSON.stringify({
-    scores,
-    avgScore,
-    stroopEffect,
-    reactionTime,
-    memorySpan,
-    inhibition,
-    timestamp: Date.now()
+  // Extract individual scores
+  const cogScores = {
+    F: results.stroop?.score ?? 0,       // Form (Stroop)
+    C: results.nback?.score ?? 0,        // Concept (N-Back/Memory)
+    V: results.visual?.score ?? 0,       // Vision (Visual Search)
+    S: results.reaction?.score ?? 0,     // Speed (Reaction)
+    Cr: results.trail?.score ?? 0        // Creativity (Trail Making)
+  };
+
+  // Generate B3-Hash (behavioral hash)
+  const b3Hash = await B3Hash.generate({
+    stroop: results.stroop,
+    nback: results.nback,
+    gonogo: results.gonogo,
+    trail: results.trail,
+    digit: results.digit,
+    reaction: results.reaction,
+    visual: results.visual
   });
+  const b3Short = b3Hash.slice(0, 10).toLowerCase();
+
+  // Generate QSIG (quantum-safe signature)
+  const qsig = await QSigLocal.sign(JSON.stringify(results));
+  const qsigShort = qsig.slice(0, 10).toLowerCase();
+
+  // Calculate modulation (cognitive variability)
+  const avgScore = scores.reduce((a, b) => a + b, 0) / scores.length;
+  const variance = scores.reduce((sum, score) => sum + Math.pow(score - avgScore, 2), 0) / scores.length;
+  const stdDev = Math.sqrt(variance);
   
-  const hashBuffer = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(dataToHash));
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  const shortHash = hashArray.slice(0, 4).map(b => b.toString(16).padStart(2, '0')).join('').toUpperCase();
-  
-  return `F${avgScore}${modality}${memorySpan}S${flexibility}Cr${shortHash.slice(0, 2)}`;
+  // Modulation encoding
+  const c = Math.round((1 - stdDev / 50) * 100);  // Consistency (0-100)
+  const f = Math.round(stdDev);                    // Flexibility (0-100)
+  const m = Math.round(avgScore - 50);             // Magnitude offset
+
+  // Energy level (based on reaction time)
+  const reactionScore = results.reaction?.score ?? 50;
+  const energyLevel = reactionScore > 70 ? 'H' : reactionScore > 40 ? 'M' : 'L';
+
+  // Assemble HCS-U7 code with pipe separators
+  const hcsCode = [
+    'HCS-U7',
+    `V:8.0`,                                                    // Version
+    `ALG:QS`,                                                   // Algorithm: Quantum-Safe
+    `E:${energyLevel}`,                                         // Energy level
+    `MOD:c${c}f${f}m${m}`,                                      // Modulation
+    `COG:F${cogScores.F}C${cogScores.C}V${cogScores.V}S${cogScores.S}Cr${cogScores.Cr}`,  // Cognitive scores
+    `QSIG:${qsigShort}`,                                        // Quantum signature
+    `B3:${b3Short}`                                             // Behavioral hash
+  ].join('|');
+
+  return hcsCode;
 }
 
 /**

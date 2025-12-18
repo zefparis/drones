@@ -8,14 +8,14 @@ import { Shield, ChevronLeft, CheckCircle, Clock } from 'lucide-react';
 
 import {
   StroopTestFull,
-  NBackTest,
+  MemoryCardsTest,
   GoNoGoTest,
   TrailMakingTest,
   DigitSpanTest,
   ReactionTimeTest,
   VisualSearchTest,
   type StroopResult,
-  type NBackResult,
+  type MemoryCardsResult,
   type GoNoGoResult,
   type TrailMakingResult,
   type DigitSpanResult,
@@ -35,7 +35,7 @@ import {
 type TestPhase = 
   | 'welcome'
   | 'stroop' 
-  | 'nback' 
+  | 'memory' 
   | 'gonogo'
   | 'trail'
   | 'digit'
@@ -47,13 +47,13 @@ type TestPhase =
   | 'qr';
 
 const TEST_SEQUENCE: { phase: TestPhase; name: string; duration: string; icon: string }[] = [
-  { phase: 'stroop', name: 'Stroop Test', duration: '2 min', icon: '🎨' },
-  { phase: 'nback', name: 'N-Back', duration: '3 min', icon: '🧠' },
-  { phase: 'gonogo', name: 'Go/No-Go', duration: '2 min', icon: '🚦' },
-  { phase: 'trail', name: 'Trail Making', duration: '3 min', icon: '🔗' },
-  { phase: 'digit', name: 'Digit Span', duration: '3 min', icon: '🔢' },
-  { phase: 'reaction', name: 'Reaction Time', duration: '2 min', icon: '⚡' },
-  { phase: 'visual', name: 'Visual Search', duration: '3 min', icon: '🔍' },
+  { phase: 'stroop', name: 'Stroop Test', duration: '30s', icon: '🎨' },
+  { phase: 'memory', name: 'Memory Cards', duration: '45s', icon: '🎴' },
+  { phase: 'gonogo', name: 'Go/No-Go', duration: '20s', icon: '🚦' },
+  { phase: 'trail', name: 'Trail Making', duration: '40s', icon: '🔗' },
+  { phase: 'digit', name: 'Digit Span', duration: '45s', icon: '🔢' },
+  { phase: 'reaction', name: 'Reaction Time', duration: '20s', icon: '⚡' },
+  { phase: 'visual', name: 'Visual Search', duration: '30s', icon: '🔍' },
 ];
 
 interface HcsAuthPageProps {
@@ -232,7 +232,7 @@ export function HcsAuthPage({ onClose, onComplete }: HcsAuthPageProps) {
 
               <div className="flex items-center justify-center gap-2 text-sm text-slate-500 mb-6">
                 <Clock className="w-4 h-4" />
-                Total duration: 15-20 minutes
+                Total duration: ~4 minutes
               </div>
 
               <button
@@ -250,9 +250,9 @@ export function HcsAuthPage({ onClose, onComplete }: HcsAuthPageProps) {
               onComplete={(result: StroopResult) => handleTestComplete('stroop', result)} 
             />
           )}
-          {phase === 'nback' && (
-            <NBackTest 
-              onComplete={(result: NBackResult) => handleTestComplete('nback', result)} 
+          {phase === 'memory' && (
+            <MemoryCardsTest 
+              onComplete={(result: MemoryCardsResult) => handleTestComplete('nback', result)} 
             />
           )}
           {phase === 'gonogo' && (

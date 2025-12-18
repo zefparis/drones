@@ -1,5 +1,5 @@
 /**
- * N-Back Test - Working Memory (3 min)
+ * N-Back Test - Working Memory (7 trials)
  * Tests working memory by requiring comparison with N items back
  */
 
@@ -36,7 +36,7 @@ interface NBackTestProps {
   totalTrials?: number;
 }
 
-export function NBackTest({ onComplete, nBack = 2, totalTrials = 30 }: NBackTestProps) {
+export function NBackTest({ onComplete, nBack = 2, totalTrials = 7 }: NBackTestProps) {
   const [phase, setPhase] = useState<'intro' | 'running' | 'isi' | 'complete'>('intro');
   const [trials, setTrials] = useState<Trial[]>([]);
   const [sequence, setSequence] = useState<string[]>([]);

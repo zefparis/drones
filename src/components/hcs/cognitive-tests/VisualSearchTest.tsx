@@ -1,5 +1,5 @@
 /**
- * Visual Search Test - Selective Attention (3 min)
+ * Visual Search Test - Selective Attention (7 trials)
  * Tests visual attention and target detection
  */
 
@@ -7,7 +7,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { testResultsStore } from '../../../lib/hcs/storage/test-results-store';
 
 const GRID_SIZE = 6;
-const TOTAL_TRIALS = 20;
+const TOTAL_TRIALS = 7;
 const MAX_TIME_PER_TRIAL = 10000;
 
 interface Target {
