@@ -81,17 +81,17 @@ export class GazeboSimulator {
   
   // Internal simulation state
   private truePosition: { lat: number; lon: number; alt: number };
-  private _vioOrigin: { lat: number; lon: number; alt: number };
+  private vioOrigin: { lat: number; lon: number; alt: number };
   private vioCumulative: { x: number; y: number; z: number } = { x: 0, y: 0, z: 0 };
-  private _velocity: { vx: number; vy: number; vz: number } = { vx: 0, vy: 0, vz: 0 };
-  private _heading: number = 0;
+  private velocity: { vx: number; vy: number; vz: number } = { vx: 0, vy: 0, vz: 0 };
+  private heading: number = 0;
   private waypoints: Array<{ lat: number; lon: number; alt: number }> = [];
   private currentWaypointIndex: number = 0;
 
   constructor(config: Partial<GazeboSimConfig> = {}) {
     this.config = { ...DEFAULT_SIM_CONFIG, ...config };
     this.truePosition = { ...this.config.startPosition };
-    this._vioOrigin = { ...this.config.startPosition };
+    this.vioOrigin = { ...this.config.startPosition };
     
     // Initialize state with default values first (before calling methods that depend on state)
     this.state = {
@@ -189,7 +189,7 @@ export class GazeboSimulator {
    */
   teleport(lat: number, lon: number, alt: number): void {
     this.truePosition = { lat, lon, alt };
-    this._vioOrigin = { lat, lon, alt };
+    this.vioOrigin = { lat, lon, alt };
     this.vioCumulative = { x: 0, y: 0, z: 0 };
     this.updateState();
   }
@@ -254,6 +254,21 @@ export class GazeboSimulator {
   }
 
   /**
+   * Get internal navigation state (for debugging/telemetry)
+   */
+  getInternalState(): {
+    vioOrigin: { lat: number; lon: number; alt: number };
+    velocity: { vx: number; vy: number; vz: number };
+    heading: number;
+  } {
+    return {
+      vioOrigin: { ...this.vioOrigin },
+      velocity: { ...this.velocity },
+      heading: this.heading,
+    };
+  }
+
+  /**
    * Subscribe to state updates
    */
   onUpdate(callback: (state: SimulationState) => void): () => void {
@@ -285,7 +300,7 @@ export class GazeboSimulator {
         }
         
         // Reset VIO origin to current GPS position
-        this._vioOrigin = { ...this.truePosition };
+        this.vioOrigin = { ...this.truePosition };
         this.vioCumulative = { x: 0, y: 0, z: 0 };
         
         resolve({
@@ -342,7 +357,7 @@ export class GazeboSimulator {
       target.lat, target.lon
     );
     
-    this._heading = bearing;
+    this.heading = bearing;
     const newPos = this.movePosition(
       this.truePosition.lat, this.truePosition.lon,
       bearing, moveDistance
@@ -356,7 +371,7 @@ export class GazeboSimulator {
     this.truePosition.alt += Math.sign(altDiff) * Math.min(Math.abs(altDiff), 2 * deltaTime);
     
     // Update velocity estimate
-    this._velocity = {
+    this.velocity = {
       vx: moveDistance * Math.sin(bearing * Math.PI / 180) / deltaTime,
       vy: moveDistance * Math.cos(bearing * Math.PI / 180) / deltaTime,
       vz: (target.alt - this.truePosition.alt) / deltaTime,

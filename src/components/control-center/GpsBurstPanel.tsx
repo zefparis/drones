@@ -146,7 +146,6 @@ export function GpsBurstPanel() {
     metrics,
     simulationState,
     events,
-    isSimulationMode,
     requestBurst,
     emergencyBurst,
     abortBurst,
