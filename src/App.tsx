@@ -10,7 +10,7 @@
  * - Threat detection panel
  */
 
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   Activity,
@@ -18,20 +18,24 @@ import {
   Battery,
   CheckCircle2,
   Compass,
+  Lock,
   MapPin,
   Navigation,
   Radio,
   Radar,
   Shield,
+  ShieldCheck,
   WifiOff,
 } from 'lucide-react'
 
 import VisualizationPanel from './components/VisualizationPanel'
 import { NavigationMap } from './components/NavigationMap'
+import { ShieldAuthModal } from './components/shield'
 import { useRosBridge } from './lib/ros'
 import { predictSunObservation } from './lib/ephemeris'
 import { cn } from './lib/utils'
 import type { NavigationState } from './types/celestial'
+import type { ShieldResult } from './lib/shield'
 
 // Default position (Paris)
 const DEFAULT_POSITION = {
@@ -91,6 +95,58 @@ export default function App() {
 
   // Mission state (mock for now)
   const [mission] = useState<{ name: string; waypoints: Array<{ lat: number; lon: number; alt: number }> } | null>(null)
+
+  // HCS-SHIELD Authentication state
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [pilotScore, setPilotScore] = useState<number | null>(null)
+  const [showAuthModal, setShowAuthModal] = useState(false)
+  const [authMode, setAuthMode] = useState<'full' | 'quick'>('full')
+  const [authTitle, setAuthTitle] = useState('Authentification Pilote')
+  const [authDescription, setAuthDescription] = useState('Vérification cognitive HCS-SHIELD requise')
+  const [pendingAction, setPendingAction] = useState<(() => void) | null>(null)
+
+  // Shield authentication handlers
+  const handleAuthSuccess = useCallback((result: ShieldResult) => {
+    setIsAuthenticated(true)
+    setPilotScore(result.humanScore)
+    setShowAuthModal(false)
+    console.log('✅ Pilote authentifié:', result)
+    
+    // Execute pending action if any
+    if (pendingAction) {
+      pendingAction()
+      setPendingAction(null)
+    }
+  }, [pendingAction])
+
+  const handleAuthFailure = useCallback((result: ShieldResult) => {
+    setIsAuthenticated(false)
+    setPilotScore(null)
+    setShowAuthModal(false)
+    console.log('❌ Authentification échouée:', result)
+  }, [])
+
+  // Request authentication before sensitive action (exported for future use)
+  // Usage: requireAuth(() => doSensitiveAction(), 'quick', 'Proof-of-Presence')
+  const _requireAuth = useCallback((
+    action: () => void,
+    mode: 'full' | 'quick' = 'quick',
+    title?: string,
+    description?: string
+  ) => {
+    if (isAuthenticated && mode === 'quick') {
+      setAuthMode('quick')
+      setAuthTitle(title || 'Proof-of-Presence')
+      setAuthDescription(description || 'Vérification cognitive avant action sensible')
+    } else {
+      setAuthMode(mode)
+      setAuthTitle(title || 'Authentification Pilote')
+      setAuthDescription(description || 'Vérification cognitive HCS-SHIELD requise')
+    }
+    setPendingAction(() => action)
+    setShowAuthModal(true)
+  }, [isAuthenticated])
+  void _requireAuth // Suppress unused warning - reserved for QR mission unlock
 
   // For celestial visualization (existing component)
   const navState: NavigationState = {
@@ -163,6 +219,36 @@ export default function App() {
                 {THREAT_LABELS[threatLevel]}
               </div>
             )}
+
+            {/* Pilot Authentication Status */}
+            <button
+              onClick={() => {
+                if (!isAuthenticated) {
+                  setAuthMode('full')
+                  setAuthTitle('Authentification Pilote')
+                  setAuthDescription('Vérification cognitive HCS-SHIELD requise')
+                  setShowAuthModal(true)
+                }
+              }}
+              className={cn(
+                'flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium transition-colors',
+                isAuthenticated
+                  ? 'bg-emerald-500/20 text-emerald-400'
+                  : 'bg-rose-500/20 text-rose-400 hover:bg-rose-500/30 cursor-pointer',
+              )}
+            >
+              {isAuthenticated ? (
+                <>
+                  <ShieldCheck className="h-3 w-3" />
+                  Pilote {pilotScore ? `(${(pilotScore * 100).toFixed(0)}%)` : ''}
+                </>
+              ) : (
+                <>
+                  <Lock className="h-3 w-3" />
+                  Non authentifié
+                </>
+              )}
+            </button>
 
             {/* ROS Connection */}
             <div className="flex items-center gap-2">
@@ -382,7 +468,39 @@ export default function App() {
             ROS2 not connected - Dashboard in offline mode
           </div>
         )}
+
+        {/* Authentication Required Banner */}
+        {!isAuthenticated && (
+          <div className="mt-6 flex items-center justify-between rounded-lg border border-cyan-500/30 bg-cyan-500/10 p-3">
+            <div className="flex items-center gap-2 text-sm text-cyan-300">
+              <Shield className="h-4 w-4" />
+              Authentification pilote requise pour accéder aux commandes
+            </div>
+            <button
+              onClick={() => {
+                setAuthMode('full')
+                setAuthTitle('Authentification Pilote')
+                setAuthDescription('Vérification cognitive HCS-SHIELD requise')
+                setShowAuthModal(true)
+              }}
+              className="rounded-lg bg-cyan-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-cyan-500"
+            >
+              S'authentifier
+            </button>
+          </div>
+        )}
       </main>
+
+      {/* HCS-SHIELD Authentication Modal */}
+      <ShieldAuthModal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        onSuccess={handleAuthSuccess}
+        onFailure={handleAuthFailure}
+        mode={authMode}
+        title={authTitle}
+        description={authDescription}
+      />
     </div>
   )
 }
