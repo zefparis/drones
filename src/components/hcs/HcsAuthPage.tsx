@@ -4,7 +4,7 @@
  */
 
 import { useState, useCallback } from 'react';
-import { Shield, ChevronLeft, CheckCircle, Clock } from 'lucide-react';
+import { Shield, ChevronLeft, CheckCircle, Clock, Copy } from 'lucide-react';
 
 import {
   StroopTestFull,
@@ -296,39 +296,55 @@ export function HcsAuthPage({ onClose, onComplete }: HcsAuthPageProps) {
           {/* Profile Generated */}
           {phase === 'profile' && (
             <div className="bg-slate-900 rounded-xl p-8">
-              <div className="text-6xl mb-4 text-center">✅</div>
-              <h2 className="text-2xl font-bold text-white mb-6 text-center">Profile Generated</h2>
+              {/* Header with success icon */}
+              <div className="text-center mb-8">
+                <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-green-500/20 mb-4">
+                  <CheckCircle className="w-12 h-12 text-green-500" />
+                </div>
+                <h2 className="text-3xl font-bold text-white mb-2">Profile Generated</h2>
+                <p className="text-slate-400">Your unique cognitive authentication code</p>
+              </div>
               
-              {/* Code HCS-U7 en sections claires */}
-              <div className="bg-slate-800 rounded-lg p-6 mb-6 max-w-md mx-auto space-y-3">
-                <div className="text-center text-slate-400 text-sm mb-4">
-                  Your HCS-U7 Cognitive Code
+              {/* Code HCS-U7 - OPAQUE (pas de décomposition) */}
+              <div className="bg-slate-800 rounded-lg p-6 mb-6">
+                <div className="flex items-center justify-between mb-3">
+                  <label className="text-sm text-slate-500">HCS-U7 Code</label>
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(hcsCode);
+                      alert('Code copied to clipboard');
+                    }}
+                    className="flex items-center gap-1 px-2 py-1 text-xs text-slate-400 hover:text-cyan-400 hover:bg-slate-700 rounded transition-colors"
+                  >
+                    <Copy className="w-3 h-3" />
+                    Copy
+                  </button>
                 </div>
                 
-                <CodeSection label="Version" value="V:8.0" />
-                <CodeSection label="Algorithm" value="ALG:QS" />
-                <CodeSection label="Energy" value={hcsCode.match(/E:([HML])/)?.[1] || 'M'} />
-                <CodeSection label="Modulation" value={hcsCode.match(/MOD:([^|]+)/)?.[1] || ''} />
-                <CodeSection label="Cognition" value={hcsCode.match(/COG:([^|]+)/)?.[1] || ''} />
-                <CodeSection label="Signature" value={hcsCode.match(/QSIG:([^|]+)/)?.[1] || ''} />
-                <CodeSection label="Behavioral" value={hcsCode.match(/B3:([^|]+)/)?.[1] || ''} />
-                
-                {/* Code complet (caché par défaut) */}
-                <details className="mt-4">
-                  <summary className="text-xs text-slate-500 cursor-pointer hover:text-slate-400">
-                    Show full code
-                  </summary>
-                  <div className="mt-2 p-3 bg-slate-900 rounded text-xs font-mono break-all text-slate-300">
+                {/* Code en UN SEUL BLOC - pas de sections révélées */}
+                <div className="relative">
+                  <div className="font-mono text-xs md:text-sm text-cyan-400 break-all leading-relaxed p-4 bg-slate-950 rounded border border-slate-700">
                     {hcsCode}
                   </div>
-                </details>
+                  {/* Overlay de sécurité */}
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-cyan-500/5 to-transparent animate-pulse pointer-events-none rounded" />
+                </div>
+                
+                {/* Avertissement sécurité */}
+                <div className="mt-3 flex items-start gap-2 text-xs text-amber-400">
+                  <Shield className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                  <span>
+                    Keep this code confidential. It's hardware-bound to this device and cannot be used elsewhere.
+                  </span>
+                </div>
               </div>
 
-              <div className="grid grid-cols-3 md:grid-cols-7 gap-2 mb-6 max-w-2xl mx-auto">
+              {/* Scores Cognitifs (grid propre) */}
+              <div className="grid grid-cols-4 md:grid-cols-7 gap-3 mb-8">
                 {Object.entries(testResults).map(([key, result]) => (
-                  <div key={key} className="bg-slate-800/50 rounded-lg p-3 text-center">
-                    <p className="text-xs text-slate-500 capitalize mb-1">{key}</p>
-                    <p className="text-xl font-bold text-cyan-400">{(result as { score: number }).score}</p>
+                  <div key={key} className="bg-slate-800/50 rounded-lg p-3 text-center border border-slate-700/50">
+                    <p className="text-xs text-slate-400 capitalize mb-1 truncate">{key}</p>
+                    <p className="text-xl md:text-2xl font-bold text-cyan-400">{(result as { score: number }).score}</p>
                   </div>
                 ))}
               </div>
@@ -341,7 +357,7 @@ export function HcsAuthPage({ onClose, onComplete }: HcsAuthPageProps) {
                 onClick={() => setPhase('mission')}
                 className="w-full px-8 py-4 bg-cyan-500 text-white rounded-lg font-semibold text-lg hover:bg-cyan-400 transition-colors"
               >
-                Plan Mission
+                Plan Mission →
               </button>
             </div>
           )}
@@ -366,12 +382,3 @@ export function HcsAuthPage({ onClose, onComplete }: HcsAuthPageProps) {
   );
 }
 
-// Helper Component for HCS Code sections
-function CodeSection({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex items-center justify-between border-b border-slate-700 pb-2">
-      <span className="text-sm text-slate-500">{label}</span>
-      <span className="font-mono text-sm text-cyan-400">{value}</span>
-    </div>
-  );
-}

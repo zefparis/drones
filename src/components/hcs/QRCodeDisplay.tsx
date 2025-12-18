@@ -4,7 +4,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import QRCode from 'qrcode';
-import { Shield, Clock, AlertTriangle, RefreshCw, Trash2 } from 'lucide-react';
+import { Shield, Clock, AlertTriangle, RefreshCw, Trash2, Download, Maximize } from 'lucide-react';
 import type { MissionData } from './MissionPlanner';
 
 interface QRCodeDisplayProps {
@@ -86,6 +86,14 @@ export function QRCodeDisplay({
   const getProgressWidth = () => {
     return `${(timeLeft / expiresIn) * 100}%`;
   };
+
+  const handleDownload = useCallback(() => {
+    if (!qrDataUrl) return;
+    const link = document.createElement('a');
+    link.href = qrDataUrl;
+    link.download = `mission-${mission.name}-${Date.now()}.png`;
+    link.click();
+  }, [qrDataUrl, mission.name]);
 
   if (isExpired) {
     return (
@@ -227,9 +235,17 @@ export function QRCodeDisplay({
       <div className="flex gap-3">
         <button
           onClick={() => setIsFullscreen(true)}
-          className="flex-1 py-2 bg-slate-700 text-white rounded-lg hover:bg-slate-600 transition-colors"
+          className="flex-1 flex items-center justify-center gap-2 py-2 bg-slate-700 text-white rounded-lg hover:bg-slate-600 transition-colors"
         >
+          <Maximize className="w-4 h-4" />
           Fullscreen
+        </button>
+        <button
+          onClick={handleDownload}
+          className="flex items-center justify-center gap-2 px-4 py-2 bg-slate-700 text-white rounded-lg hover:bg-slate-600 transition-colors"
+        >
+          <Download className="w-4 h-4" />
+          Download
         </button>
         
         {showDestroy ? (

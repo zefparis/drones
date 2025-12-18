@@ -2,11 +2,22 @@
  * CORTEX-U7 Navigation Map Component
  * 
  * Displays drone position, waypoints, and trajectory on an interactive map.
- * Uses MapBox for satellite imagery with canvas overlay for drone/waypoints.
+ * Uses Leaflet/OpenStreetMap for map tiles (no API key required).
  */
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
+import { MapContainer, TileLayer, Marker, Polyline, useMap } from 'react-leaflet'
+import L from 'leaflet'
+import 'leaflet/dist/leaflet.css'
 import type { DronePosition } from '../lib/ros'
+
+// Fix Leaflet default marker icon
+delete (L.Icon.Default.prototype as unknown as { _getIconUrl?: unknown })._getIconUrl
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+  iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+})
 
 interface Waypoint {
   lat: number
@@ -22,126 +33,138 @@ interface NavigationMapProps {
 
 // Paris center as default
 const DEFAULT_CENTER = { lat: 48.8566, lon: 2.3522 }
-const TILE_SIZE = 256
 const INITIAL_ZOOM = 15
 
-// MapBox token from environment
-const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN || ''
+// Component to update map center when drone position changes
+function MapUpdater({ position }: { position: DronePosition }) {
+  const map = useMap()
+  
+  useEffect(() => {
+    if (position?.lat && position?.lon) {
+      map.setView([position.lat, position.lon], map.getZoom(), { animate: true })
+    }
+  }, [position?.lat, position?.lon, map])
+  
+  return null
+}
+
+// Rotated drone marker component
+function RotatedDroneMarker({ position }: { position: DronePosition }) {
+  const rotatedIcon = useMemo(() => {
+    const heading = position?.heading ?? 0
+    return L.divIcon({
+      className: 'drone-marker',
+      html: `<div style="
+        width: 40px; 
+        height: 40px; 
+        display: flex; 
+        align-items: center; 
+        justify-content: center;
+        transform: rotate(${heading}deg);
+        filter: drop-shadow(0 0 10px rgba(6, 182, 212, 0.9));
+      ">
+        <svg viewBox="0 0 24 24" width="32" height="32" fill="#06b6d4" stroke="#fff" stroke-width="1.5">
+          <path d="M12 2L4 20h16L12 2z"/>
+        </svg>
+      </div>`,
+      iconSize: [40, 40],
+      iconAnchor: [20, 20],
+    })
+  }, [position?.heading])
+  
+  const lat = position?.lat ?? DEFAULT_CENTER.lat
+  const lon = position?.lon ?? DEFAULT_CENTER.lon
+  
+  return <Marker position={[lat, lon]} icon={rotatedIcon} />
+}
 
 export function NavigationMap({ position, waypoints = [], trajectory = [] }: NavigationMapProps) {
-  const canvasRef = useRef<HTMLCanvasElement>(null)
-  const containerRef = useRef<HTMLDivElement>(null)
-  const [dimensions, setDimensions] = useState({ width: 400, height: 320 })
-  const [zoom] = useState(INITIAL_ZOOM)
-  const [mapUrl, setMapUrl] = useState('')
-
-  // Update dimensions on resize
+  const [isClient, setIsClient] = useState(false)
+  
   useEffect(() => {
-    const updateDimensions = () => {
-      if (containerRef.current) {
-        const rect = containerRef.current.getBoundingClientRect()
-        setDimensions({ width: rect.width, height: rect.height })
-      }
-    }
-
-    updateDimensions()
-    window.addEventListener('resize', updateDimensions)
-    return () => window.removeEventListener('resize', updateDimensions)
+    setIsClient(true)
   }, [])
+  
+  const lat = position?.lat ?? DEFAULT_CENTER.lat
+  const lon = position?.lon ?? DEFAULT_CENTER.lon
 
-  // Update MapBox static image URL
-  useEffect(() => {
-    const lat = position?.lat ?? DEFAULT_CENTER.lat
-    const lon = position?.lon ?? DEFAULT_CENTER.lon
-    
-    if (MAPBOX_TOKEN) {
-      // MapBox Static Images API - satellite-streets style
-      const url = `https://api.mapbox.com/styles/v1/mapbox/satellite-streets-v12/static/${lon},${lat},${zoom},0/${Math.round(dimensions.width)}x${Math.round(dimensions.height)}@2x?access_token=${MAPBOX_TOKEN}`
-      setMapUrl(url)
-    }
-  }, [position?.lat, position?.lon, zoom, dimensions])
-
-  // Draw overlay (drone, waypoints, trajectory)
-  useEffect(() => {
-    const canvas = canvasRef.current
-    if (!canvas) return
-
-    const ctx = canvas.getContext('2d')
-    if (!ctx) return
-
-    const { width, height } = dimensions
-    canvas.width = width
-    canvas.height = height
-
-    // Clear canvas (transparent for overlay)
-    ctx.clearRect(0, 0, width, height)
-
-    // If no MapBox token, draw grid background
-    if (!MAPBOX_TOKEN) {
-      ctx.fillStyle = '#0f172a'
-      ctx.fillRect(0, 0, width, height)
-      drawGrid(ctx, width, height)
-    }
-
-    // Center on drone position
-    const centerLat = position?.lat ?? DEFAULT_CENTER.lat
-    const centerLon = position?.lon ?? DEFAULT_CENTER.lon
-
-    // Draw coordinate labels
-    drawCoordinates(ctx, width, height, centerLat, centerLon, zoom)
-
-    // Draw trajectory
-    if (trajectory.length > 1) {
-      drawTrajectory(ctx, width, height, centerLat, centerLon, zoom, trajectory)
-    }
-
-    // Draw waypoints
-    waypoints.forEach((wp, idx) => {
-      drawWaypoint(ctx, width, height, centerLat, centerLon, zoom, wp, idx)
-    })
-
-    // Draw drone position
-    drawDrone(ctx, width, height, position?.heading ?? 0)
-
-    // Draw compass
-    drawCompass(ctx, width, height, position?.heading ?? 0)
-
-  }, [position, waypoints, trajectory, dimensions, zoom])
+  if (!isClient) {
+    return (
+      <div className="relative h-full w-full bg-slate-950 flex items-center justify-center">
+        <div className="text-slate-500">Loading map...</div>
+      </div>
+    )
+  }
 
   return (
-    <div ref={containerRef} className="relative h-full w-full bg-slate-950 overflow-hidden">
-      {/* MapBox satellite background */}
-      {mapUrl && (
-        <img
-          src={mapUrl}
-          alt="Satellite map"
-          className="absolute inset-0 h-full w-full object-cover"
-          onError={(e) => {
-            // Hide on error, fallback to canvas grid
-            (e.target as HTMLImageElement).style.display = 'none'
-          }}
+    <div className="relative h-full w-full bg-slate-950 overflow-hidden">
+      <MapContainer 
+        center={[lat, lon]}
+        zoom={INITIAL_ZOOM}
+        style={{ height: '100%', width: '100%' }}
+        className="z-0"
+        zoomControl={false}
+      >
+        <TileLayer 
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          attribution='© OSM'
         />
-      )}
-      
-      {/* Canvas overlay for drone, waypoints, trajectory */}
-      <canvas
-        ref={canvasRef}
-        className="absolute inset-0 h-full w-full"
-        style={{ display: 'block' }}
-      />
+        
+        {/* Auto-center on drone */}
+        <MapUpdater position={position} />
+        
+        {/* Drone marker with rotation */}
+        <RotatedDroneMarker position={position} />
+        
+        {/* Waypoint markers */}
+        {waypoints.map((wp, idx) => (
+          <Marker 
+            key={idx} 
+            position={[wp.lat, wp.lon]}
+            icon={L.divIcon({
+              className: 'waypoint-marker',
+              html: `<div style="
+                width: 24px; height: 24px; 
+                background: #06b6d4; 
+                border: 2px solid white; 
+                border-radius: 50%; 
+                display: flex; 
+                align-items: center; 
+                justify-content: center;
+                font-size: 11px;
+                font-weight: bold;
+                color: white;
+              ">${idx + 1}</div>`,
+              iconSize: [24, 24],
+              iconAnchor: [12, 12],
+            })}
+          />
+        ))}
+        
+        {/* Trajectory line */}
+        {trajectory.length > 1 && (
+          <Polyline 
+            positions={trajectory.map(p => [p.lat, p.lon] as [number, number])}
+            color="#06b6d4"
+            weight={3}
+            opacity={0.7}
+            dashArray="5, 10"
+          />
+        )}
+      </MapContainer>
       
       {/* Position overlay */}
-      <div className="absolute bottom-2 left-2 rounded bg-slate-900/90 px-2 py-1 text-xs text-slate-300">
+      <div className="absolute bottom-2 left-2 z-[1000] rounded bg-slate-900/90 px-2 py-1 text-xs text-slate-300">
         <div className="font-mono">
-          {(position?.lat ?? DEFAULT_CENTER.lat).toFixed(6)}°N
+          {lat.toFixed(6)}°N
         </div>
         <div className="font-mono">
-          {(position?.lon ?? DEFAULT_CENTER.lon).toFixed(6)}°E
+          {lon.toFixed(6)}°E
         </div>
       </div>
 
       {/* Altitude overlay */}
-      <div className="absolute bottom-2 right-2 rounded bg-slate-900/90 px-2 py-1 text-xs text-slate-300">
+      <div className="absolute bottom-2 right-2 z-[1000] rounded bg-slate-900/90 px-2 py-1 text-xs text-slate-300">
         <div className="font-mono">
           ALT: {(position?.alt ?? 0).toFixed(1)}m
         </div>
@@ -151,243 +174,9 @@ export function NavigationMap({ position, waypoints = [], trajectory = [] }: Nav
       </div>
 
       {/* North indicator */}
-      <div className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-slate-900/90 text-xs font-bold text-cyan-400">
+      <div className="absolute right-2 top-2 z-[1000] flex h-8 w-8 items-center justify-center rounded-full bg-slate-900/90 text-xs font-bold text-cyan-400">
         N
       </div>
     </div>
   )
-}
-
-// ============================================================================
-// DRAWING FUNCTIONS
-// ============================================================================
-
-function drawGrid(ctx: CanvasRenderingContext2D, width: number, height: number) {
-  ctx.strokeStyle = '#1e293b'
-  ctx.lineWidth = 1
-
-  // Vertical lines
-  const gridSpacing = 40
-  for (let x = 0; x < width; x += gridSpacing) {
-    ctx.beginPath()
-    ctx.moveTo(x, 0)
-    ctx.lineTo(x, height)
-    ctx.stroke()
-  }
-
-  // Horizontal lines
-  for (let y = 0; y < height; y += gridSpacing) {
-    ctx.beginPath()
-    ctx.moveTo(0, y)
-    ctx.lineTo(width, y)
-    ctx.stroke()
-  }
-}
-
-function drawCoordinates(
-  ctx: CanvasRenderingContext2D,
-  _width: number,
-  height: number,
-  centerLat: number,
-  _centerLon: number,
-  zoom: number
-) {
-  ctx.fillStyle = '#475569'
-  ctx.font = '10px monospace'
-
-  // Scale factor (meters per pixel at this zoom level)
-  const metersPerPixel = 156543.03392 * Math.cos((centerLat * Math.PI) / 180) / Math.pow(2, zoom)
-  
-  // Draw scale bar
-  const scaleBarLength = 100 // pixels
-  const scaleDistance = scaleBarLength * metersPerPixel
-
-  ctx.fillStyle = '#64748b'
-  ctx.fillRect(10, height - 30, scaleBarLength, 3)
-  ctx.fillText(`${scaleDistance.toFixed(0)}m`, 10, height - 35)
-}
-
-function drawTrajectory(
-  ctx: CanvasRenderingContext2D,
-  width: number,
-  height: number,
-  centerLat: number,
-  centerLon: number,
-  zoom: number,
-  trajectory: Array<{ lat: number; lon: number }>
-) {
-  if (trajectory.length < 2) return
-
-  ctx.strokeStyle = '#06b6d4'
-  ctx.lineWidth = 2
-  ctx.setLineDash([5, 5])
-  ctx.beginPath()
-
-  trajectory.forEach((point, idx) => {
-    const { x, y } = latLonToPixel(point.lat, point.lon, centerLat, centerLon, width, height, zoom)
-    if (idx === 0) {
-      ctx.moveTo(x, y)
-    } else {
-      ctx.lineTo(x, y)
-    }
-  })
-
-  ctx.stroke()
-  ctx.setLineDash([])
-}
-
-function drawWaypoint(
-  ctx: CanvasRenderingContext2D,
-  width: number,
-  height: number,
-  centerLat: number,
-  centerLon: number,
-  zoom: number,
-  waypoint: Waypoint,
-  index: number
-) {
-  const { x, y } = latLonToPixel(waypoint.lat, waypoint.lon, centerLat, centerLon, width, height, zoom)
-
-  // Draw circle
-  ctx.fillStyle = '#06b6d4'
-  ctx.strokeStyle = '#ffffff'
-  ctx.lineWidth = 2
-  ctx.beginPath()
-  ctx.arc(x, y, 10, 0, Math.PI * 2)
-  ctx.fill()
-  ctx.stroke()
-
-  // Draw number
-  ctx.fillStyle = '#ffffff'
-  ctx.font = 'bold 10px sans-serif'
-  ctx.textAlign = 'center'
-  ctx.textBaseline = 'middle'
-  ctx.fillText(`${index + 1}`, x, y)
-
-  // Draw altitude label
-  ctx.fillStyle = '#94a3b8'
-  ctx.font = '9px sans-serif'
-  ctx.fillText(`${waypoint.alt}m`, x, y + 18)
-}
-
-function drawDrone(
-  ctx: CanvasRenderingContext2D,
-  width: number,
-  height: number,
-  heading: number
-) {
-  const centerX = width / 2
-  const centerY = height / 2
-  const size = 16
-
-  ctx.save()
-  ctx.translate(centerX, centerY)
-  ctx.rotate((heading * Math.PI) / 180)
-
-  // Glow effect
-  const gradient = ctx.createRadialGradient(0, 0, 0, 0, 0, size * 2)
-  gradient.addColorStop(0, 'rgba(6, 182, 212, 0.5)')
-  gradient.addColorStop(1, 'rgba(6, 182, 212, 0)')
-  ctx.fillStyle = gradient
-  ctx.beginPath()
-  ctx.arc(0, 0, size * 2, 0, Math.PI * 2)
-  ctx.fill()
-
-  // Drone triangle (pointing up = forward)
-  ctx.fillStyle = '#06b6d4'
-  ctx.strokeStyle = '#ffffff'
-  ctx.lineWidth = 2
-  ctx.beginPath()
-  ctx.moveTo(0, -size)
-  ctx.lineTo(-size * 0.7, size * 0.7)
-  ctx.lineTo(0, size * 0.3)
-  ctx.lineTo(size * 0.7, size * 0.7)
-  ctx.closePath()
-  ctx.fill()
-  ctx.stroke()
-
-  ctx.restore()
-}
-
-function drawCompass(
-  ctx: CanvasRenderingContext2D,
-  width: number,
-  _height: number,
-  heading: number
-) {
-  const compassX = width - 50
-  const compassY = 50
-  const radius = 30
-
-  // Background
-  ctx.fillStyle = 'rgba(15, 23, 42, 0.9)'
-  ctx.beginPath()
-  ctx.arc(compassX, compassY, radius + 5, 0, Math.PI * 2)
-  ctx.fill()
-
-  // Compass ring
-  ctx.strokeStyle = '#334155'
-  ctx.lineWidth = 2
-  ctx.beginPath()
-  ctx.arc(compassX, compassY, radius, 0, Math.PI * 2)
-  ctx.stroke()
-
-  // Cardinal directions
-  ctx.fillStyle = '#64748b'
-  ctx.font = '10px sans-serif'
-  ctx.textAlign = 'center'
-  ctx.textBaseline = 'middle'
-
-  const directions = [
-    { label: 'N', angle: 0, color: '#f87171' },
-    { label: 'E', angle: 90, color: '#64748b' },
-    { label: 'S', angle: 180, color: '#64748b' },
-    { label: 'W', angle: 270, color: '#64748b' },
-  ]
-
-  directions.forEach(({ label, angle, color }) => {
-    const rad = ((angle - heading) * Math.PI) / 180
-    const x = compassX + Math.sin(rad) * (radius - 10)
-    const y = compassY - Math.cos(rad) * (radius - 10)
-    ctx.fillStyle = color
-    ctx.fillText(label, x, y)
-  })
-
-  // Heading indicator
-  ctx.fillStyle = '#06b6d4'
-  ctx.beginPath()
-  ctx.moveTo(compassX, compassY - radius + 5)
-  ctx.lineTo(compassX - 5, compassY - radius + 12)
-  ctx.lineTo(compassX + 5, compassY - radius + 12)
-  ctx.closePath()
-  ctx.fill()
-
-  // Heading value
-  ctx.fillStyle = '#ffffff'
-  ctx.font = 'bold 11px monospace'
-  ctx.fillText(`${heading.toFixed(0)}°`, compassX, compassY)
-}
-
-function latLonToPixel(
-  lat: number,
-  lon: number,
-  centerLat: number,
-  centerLon: number,
-  width: number,
-  height: number,
-  zoom: number
-): { x: number; y: number } {
-  // Simplified Mercator projection
-  const scale = Math.pow(2, zoom) * TILE_SIZE / (2 * Math.PI)
-  
-  const centerX = scale * (centerLon * Math.PI / 180 + Math.PI)
-  const centerY = scale * (Math.PI - Math.log(Math.tan(Math.PI / 4 + centerLat * Math.PI / 360)))
-  
-  const pointX = scale * (lon * Math.PI / 180 + Math.PI)
-  const pointY = scale * (Math.PI - Math.log(Math.tan(Math.PI / 4 + lat * Math.PI / 360)))
-  
-  return {
-    x: width / 2 + (pointX - centerX),
-    y: height / 2 + (pointY - centerY),
-  }
 }
