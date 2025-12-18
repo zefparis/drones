@@ -112,7 +112,63 @@ Interface de configuration avancée avec **730+ paramètres** répartis sur 12 m
     └── Energy optimization
 ```
 
-#### 🛡️ Sentinel (86 fonctions)
+#### � GPS Burst Manager (Stealth Mode)
+
+Système d'activation GPS furtive par bursts courts pour minimiser l'exposition RF tout en maintenant la précision de navigation.
+
+```
+├── Burst Control
+│   ├── Durée burst configurable (1-60s, défaut: 10s)
+│   ├── Intervalle minimum entre bursts (défaut: 5 min)
+│   ├── Intervalle maximum sans burst (défaut: 30 min)
+│   ├── Cooldown post-burst (défaut: 30s)
+│   └── Mode burst d'urgence
+├── Zone Evaluation
+│   ├── Safe Score calculation (0-1)
+│   ├── Threat zones (RF, Radar, Acoustic, Visual)
+│   ├── Safe zones (Terrain masked, Urban canyon, RF shadow)
+│   └── Dynamic zone updates
+├── Drift Management
+│   ├── VIO drift monitoring
+│   ├── Auto-burst on drift threshold (défaut: 2m)
+│   ├── Drift correction metrics
+│   └── GPS/VIO cross-validation
+├── Security
+│   ├── Spoofing detection (HDOP, position jump, VIO consistency)
+│   ├── Jamming detection (RSSI threshold: -80 dBm)
+│   ├── Max consecutive bursts limit
+│   └── Emergency burst override
+└── Metrics
+    ├── GPS exposure ratio
+    ├── Burst success/failure rate
+    ├── Average drift correction
+    └── Total GPS on-time
+```
+
+**Scénarios de Test (Gazebo Simulator):**
+
+| Scénario | Description | Comportement Attendu |
+|----------|-------------|---------------------|
+| **Safe Zone Navigation** | Vol dans zones sûres | Bursts autorisés |
+| **Threat Zone Test** | Entrée en zone radar | Bursts refusés |
+| **Drift Accumulation** | Vol prolongé sans GPS | Auto-burst déclenché |
+| **Mixed Environment** | Navigation zones mixtes | Bursts conditionnels |
+
+**Configuration Recommandée:**
+
+```typescript
+{
+  burstDuration: 10,        // secondes
+  minBurstInterval: 300,    // 5 minutes
+  driftThreshold: 2.0,      // mètres
+  safeScoreThreshold: 0.7,  // 70% requis
+  enableSpoofingDetection: true,
+  enableJammingDetection: true,
+  autoBurstEnabled: true
+}
+```
+
+#### �️ Sentinel (86 fonctions)
 
 ```
 ├── Threat Detection
@@ -330,6 +386,7 @@ celestial-integrity-demo/
 │   │   │   ├── IntelligenceMonitor.tsx# Monitoring IA temps réel
 │   │   │   ├── ROS2Communication.tsx  # Interface topics ROS2
 │   │   │   ├── DecisionLogs.tsx       # Logs décisions IA
+│   │   │   ├── GpsBurstPanel.tsx      # UI GPS Burst Manager
 │   │   │   └── ConfigHelpers.tsx      # Composants UI (Switch, Slider, Select)
 │   │   │
 │   │   ├── dashboard/                 # 🖥️ Dashboard Pro (cockpit)
@@ -368,6 +425,13 @@ celestial-integrity-demo/
 │   │   │   ├── rosbridge.ts           # Client WebSocket rosbridge
 │   │   │   ├── useRosBridge.ts        # Hook React pour ROS2
 │   │   │   └── index.ts               # Exports + types
+│   │   │
+│   │   ├── navigator/                 # 📡 GPS Burst Manager
+│   │   │   ├── GpsBurstManager.ts     # Manager stealth GPS
+│   │   │   ├── GazeboSimulator.ts     # Simulateur zones/drift
+│   │   │   ├── useGpsBurst.ts         # Hook React + scénarios
+│   │   │   ├── types.ts               # Types (zones, burst, metrics)
+│   │   │   └── index.ts               # Exports
 │   │   │
 │   │   ├── shield/                    # 🛡️ Détection bot/humain
 │   │   │   ├── detector.ts            # Analyseur comportemental
